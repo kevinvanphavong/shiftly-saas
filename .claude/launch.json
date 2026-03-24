@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Shiftly Preview (Static)",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "localhost:8080", "-t", "/Users/kevinvanphavong/Desktop/mba-app-test00"],
+      "cwd": "/Users/kevinvanphavong/Desktop/mba-app-test00",
+      "url": "http://localhost:8080/shiftly-preview.html",
+      "port": 8080
+    },
+    {
+      "name": "Shiftly API (Symfony)",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "localhost:8000", "-t", "public"],
+      "cwd": "/Users/kevinvanphavong/Desktop/mba-app-test00/shiftly-api",
+      "url": "http://localhost:8000/api",
+      "port": 8000
+    },
+    {
+      "name": "Shiftly App (Next.js)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/kevinvanphavong/Desktop/mba-app-test00/shiftly-app",
+      "url": "http://localhost:3000",
+      "port": 3000,
+      "autoPort": false
+    }
+  ]
+}

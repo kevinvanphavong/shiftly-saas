@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shiftly — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14; --surface:#151820; --surface2:#1c2030;
+    --border:#252a3a; --accent:#f97316; --accent2:#fb923c;
+    --blue:#3b82f6; --green:#22c55e; --red:#ef4444;
+    --yellow:#eab308; --purple:#a855f7; --indigo:#6366f1;
+    --text:#e8eaf0; --muted:#6b7280;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;display:flex;height:100vh;overflow:hidden;}
+
+  /* ---- SIDEBAR ---- */
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;flex-shrink:0;}
+  .logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);margin-bottom:3px;padding:0 8px;}
+  .logo span{color:var(--text);}
+  .centre-lbl{font-size:11px;color:var(--muted);padding:0 8px;margin-bottom:22px;}
+  .sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);padding:0 8px;margin-bottom:5px;margin-top:16px;}
+  .nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;cursor:pointer;margin-bottom:2px;color:var(--muted);font-size:13px;font-weight:500;transition:all .2s;}
+  .nav-item:hover{background:var(--surface2);color:var(--text);}
+  .nav-item.active{background:rgba(249,115,22,.1);color:var(--accent);font-weight:700;}
+  .nav-icon{font-size:15px;flex-shrink:0;}
+  .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:800;width:16px;height:16px;border-radius:5px;display:flex;align-items:center;justify-content:center;}
+  .sidebar-bot{margin-top:auto;border-top:1px solid var(--border);padding-top:12px;}
+  .user-row{display:flex;align-items:center;gap:9px;padding:7px;}
+  .user-av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;}
+  .user-name{font-size:13px;font-weight:700;}
+  .user-role{font-size:11px;color:var(--muted);}
+
+  /* ---- MAIN ---- */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .topbar{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .topbar-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;}
+  .topbar-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+  .top-btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+  .top-date{font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 11px;}
+  .notif-btn{width:33px;height:33px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;cursor:pointer;}
+  .n-dot{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--red);border:2px solid var(--surface2);}
+
+  .content{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
+
+  /* ---- SCREENS (pages) ---- */
+  .screen{display:none;}
+  .screen.active{display:flex;flex-direction:column;gap:16px;}
+
+  /* ---- HERO ---- */
+  .hero{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 22px;position:relative;overflow:hidden;display:grid;grid-template-columns:1fr auto;gap:24px;}
+  .hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .hero-sup{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:5px;}
+  .hero-ttl{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:2px;}
+  .hero-meta{font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;text-transform:uppercase;margin-left:10px;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .prog-row{display:flex;align-items:center;gap:10px;margin-bottom:5px;}
+  .prog-lbl{font-size:12px;font-weight:500;min-width:130px;}
+  .prog-bg{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .prog-pct{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent);min-width:34px;text-align:right;}
+  .hero-zones{width:230px;display:flex;flex-direction:column;gap:7px;justify-content:center;}
+  .zone-row{display:flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 11px;}
+  .zdot{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+  .zname{font-size:12px;font-weight:700;flex:1;}
+  .zbar{width:70px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;}
+  .zfill{height:100%;border-radius:2px;}
+  .zpct{font-size:11px;font-weight:800;min-width:32px;text-align:right;}
+  .av-row{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .avs{display:flex;}
+  .av{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;border:2px solid var(--surface);margin-left:-4px;}
+  .av:first-child{margin-left:0;}
+
+  /* ---- STATS 4 ---- */
+  .stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;}
+  .scard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 16px;position:relative;}
+  .scard-icon{font-size:19px;margin-bottom:9px;}
+  .scard-num{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1;margin-bottom:3px;}
+  .scard-lbl{font-size:11px;color:var(--muted);}
+  .scard-trend{position:absolute;top:13px;right:13px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;}
+  .tg{background:rgba(34,197,94,.12);color:var(--green);}
+  .tw{background:rgba(239,68,68,.12);color:var(--red);}
+  .tn{background:rgba(107,114,128,.12);color:var(--muted);}
+
+  /* ---- 3 COL ---- */
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:15px 16px;}
+  .panel-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
+  .panel-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;}
+  .panel-act{font-size:11px;color:var(--accent);font-weight:600;cursor:pointer;}
+  .inc-row{display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:5px;}
+  .inc-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+  .inc-ic.h{background:rgba(239,68,68,.1);}
+  .inc-ic.m{background:rgba(234,179,8,.1);}
+  .inc-ttl{font-size:11px;font-weight:600;margin-bottom:2px;}
+  .inc-mt{font-size:10px;color:var(--muted);}
+  .inc-st{font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;display:inline-block;margin-top:2px;}
+  .st-o{background:rgba(239,68,68,.1);color:var(--red);}
+  .st-p{background:rgba(234,179,8,.1);color:var(--yellow);}
+  .tm-row{display:flex;align-items:center;gap:8px;padding:7px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:5px;}
+  .tm-a{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;}
+  .tm-n{font-size:12px;font-weight:600;flex:1;}
+  .tm-bb{width:50px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;}
+  .tm-bf{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .tm-p{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--accent);min-width:34px;text-align:right;}
+  .al-row{display:flex;align-items:center;gap:7px;font-size:11px;padding:7px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:5px;}
+  .al-d{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .al-t{flex:1;}
+  .al-tm{font-size:10px;color:var(--muted);}
+
+  /* ---- SERVICE DU JOUR (mobile view) ---- */
+  .mobile-view{display:flex;justify-content:center;padding:0 20px 20px;overflow-y:auto;flex:1;}
+  .phone{width:100%;max-width:380px;}
+  .mob-header{padding:16px 0 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .mob-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);}
+  .mob-logo span{color:var(--text);}
+  .date-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);font-weight:500;}
+  .mob-page-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:3px;}
+  .mob-page-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+
+  /* service card */
+  .srv-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden;}
+  .srv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .srv-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+  .srv-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;}
+  .status-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);color:var(--accent);}
+  .status-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;}
+  .srv-meta{display:flex;gap:14px;}
+  .srv-meta-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);}
+
+  /* progress section */
+  .mob-section{margin-bottom:16px;}
+  .mob-sec-lbl{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px;}
+  .prog-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;}
+  .prog-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+  .prog-count{font-size:12px;color:var(--muted);}
+  .prog-bar-bg{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+  .prog-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s;}
+  .zone-prog-list{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+  .zone-prog-item{display:flex;align-items:center;gap:9px;}
+  .zone-tag{font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 9px;border-radius:9px;min-width:58px;text-align:center;}
+  .zt-accueil{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+  .zt-bar{background:rgba(168,85,247,.15);color:var(--purple);border:1px solid rgba(168,85,247,.2);}
+  .zt-salle{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+  .zone-bar-bg{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+  .zone-bar-fill{height:100%;border-radius:2px;}
+  .zone-pct{font-size:11px;color:var(--muted);min-width:30px;text-align:right;}
+
+  /* checklist */
+  .tabs{display:flex;gap:5px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;}
+  .tab{padding:6px 12px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'DM Sans',sans-serif;transition:all .2s;}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .cl-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+  .cl-group-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:0 3px;margin-bottom:3px;}
+  .cl-item{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;cursor:pointer;transition:all .2s;}
+  .cl-item:hover{border-color:rgba(249,115,22,.2);}
+  .cl-item.done{opacity:.5;}
+  .cl-item.done .task-txt{text-decoration:line-through;color:var(--muted);}
+  .checkbox{width:19px;height:19px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+  .cl-item.done .checkbox{background:var(--green);border-color:var(--green);}
+  .chk{color:#fff;font-size:10px;display:none;}
+  .cl-item.done .chk{display:block;}
+  .task-txt{font-size:13px;flex:1;line-height:1.3;}
+  .prio-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .prio-h{background:var(--red);}
+  .prio-m{background:var(--yellow);}
+  .prio-f{background:var(--muted);}
+
+  /* ---- STAFF ---- */
+  .mob-stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px;}
+  .mob-scard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px;text-align:center;}
+  .mob-snum{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+  .mob-slbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+  .search-bar{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:9px 13px;margin-bottom:12px;}
+  .search-bar input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;}
+  .search-bar input::placeholder{color:var(--muted);}
+  .filter-tabs{display:flex;gap:5px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;}
+  .ftab{padding:6px 12px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'DM Sans',sans-serif;transition:all .2s;}
+  .ftab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .members-list{display:flex;flex-direction:column;gap:9px;}
+  .member-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .25s;animation:fadeUp .3s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .member-card:hover{border-color:rgba(249,115,22,.25);}
+  .member-card.expanded{border-color:rgba(249,115,22,.35);}
+  .mcmain{display:flex;align-items:center;gap:13px;padding:14px;}
+  .m-av{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;flex-shrink:0;position:relative;}
+  .av-status{position:absolute;bottom:-2px;right:-2px;width:11px;height:11px;border-radius:50%;border:2px solid var(--surface);background:var(--green);}
+  .m-info{flex:1;min-width:0;}
+  .m-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px;}
+  .m-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .role-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:5px;}
+  .rb-manager{background:rgba(249,115,22,.15);color:var(--accent);border:1px solid rgba(249,115,22,.25);}
+  .rb-membre{background:rgba(107,114,128,.15);color:var(--muted);border:1px solid rgba(107,114,128,.2);}
+  .hrs-badge{font-size:11px;color:var(--muted);}
+  .m-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+  .pts-total{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--accent);}
+  .pts-total span{font-size:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400;}
+  .lvl-bar-bg{width:70px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+  .lvl-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .expand-arr{color:var(--muted);font-size:10px;transition:transform .2s;}
+  .member-card.expanded .expand-arr{transform:rotate(180deg);}
+  .m-detail{display:none;padding:0 14px 14px;border-top:1px solid var(--border);}
+  .member-card.expanded .m-detail{display:block;}
+  .det-sec{margin-top:12px;}
+  .det-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:7px;}
+  .zones-row{display:flex;gap:5px;flex-wrap:wrap;}
+  .zone-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;}
+  .zc-accueil{background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+  .zc-bar{background:rgba(168,85,247,.12);color:var(--purple);border:1px solid rgba(168,85,247,.2);}
+  .zc-salle{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+  .lvl-row{display:flex;align-items:center;gap:9px;}
+  .lvl-dots{display:flex;gap:4px;}
+  .ldot{width:7px;height:7px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);}
+  .ldot.filled{background:var(--accent);border-color:var(--accent);}
+  .lvl-lbl{font-size:12px;color:var(--muted);}
+  .vet-box{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12px;line-height:1.6;}
+
+  /* ---- TUTORIELS ---- */
+  .prog-banner{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;}
+  .prog-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .prog-circle{width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--accent) 0deg,var(--accent) 120deg,var(--surface2) 120deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .prog-circle-inner{width:38px;height:38px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--accent);}
+  .prog-info{flex:1;}
+  .prog-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:2px;}
+  .prog-sub{font-size:12px;color:var(--muted);}
+  .prog-sub strong{color:var(--green);}
+  .featured-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
+  .featured-card:hover{transform:translateY(-2px);border-color:rgba(249,115,22,.3);}
+  .feat-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.25);color:var(--accent);border-radius:7px;padding:3px 9px;font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:10px;}
+  .feat-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;line-height:1.3;margin-bottom:9px;}
+  .feat-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .feat-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;}
+  .ft-accueil{background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+  .ft-bar{background:rgba(168,85,247,.12);color:var(--purple);border:1px solid rgba(168,85,247,.2);}
+  .ft-salle{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+  .ft-manager{background:rgba(249,115,22,.1);color:var(--accent);border:1px solid rgba(249,115,22,.15);}
+  .lvl-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;}
+  .lt-debutant{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.15);}
+  .lt-inter{background:rgba(234,179,8,.1);color:var(--yellow);border:1px solid rgba(234,179,8,.15);}
+  .lt-avance{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.15);}
+  .dur-tag{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px;}
+  .read-indicator{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;transition:all .2s;}
+  .ri-unread{background:var(--surface2);border:1px solid var(--border);color:var(--muted);}
+  .ri-read{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+  .tuto-list{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
+  .tuto-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 14px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;animation:fadeUp .3s ease both;}
+  .tuto-card:hover{transform:translateX(3px);border-color:rgba(249,115,22,.2);}
+  .tuto-card.expanded{border-color:rgba(249,115,22,.35);}
+  .tuto-card-hd{display:flex;align-items:flex-start;gap:11px;}
+  .tuto-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .tuto-main{flex:1;min-width:0;}
+  .tuto-title{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:5px;}
+  .tuto-tags{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
+  .tuto-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+  .tuto-content{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .tuto-card.expanded .tuto-content{display:block;}
+  .tuto-steps{display:flex;flex-direction:column;gap:9px;}
+  .step{display:flex;gap:11px;align-items:flex-start;}
+  .step-num{width:22px;height:22px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);flex-shrink:0;margin-top:1px;}
+  .step-text{font-size:12px;color:var(--text);line-height:1.5;flex:1;}
+  .tuto-tip{margin-top:10px;background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.15);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--accent2);line-height:1.5;display:flex;gap:7px;}
+  .mark-btn{margin-top:10px;width:100%;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+  .mark-btn:hover{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.05);}
+  .mark-btn.done{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.08);}
+
+  /* ---- SCROLLBAR ---- */
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+  /* ---- SERVICE CALENDRIER ---- */
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  .cal-lbl-h{text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;padding-bottom:7px;}
+  .cal-cell{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;cursor:pointer;transition:all .15s;gap:2px;}
+  .cal-cell:hover{background:var(--surface2);}
+  .cal-cell.other-month{color:var(--border);}
+  .cal-cell.today{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:var(--accent);font-weight:800;}
+  .cal-cell.selected{background:var(--accent);color:#fff;font-weight:800;}
+  .cdot{width:4px;height:4px;border-radius:50%;}
+  .cdot-done{background:var(--green);}
+  .cdot-live{background:var(--accent);}
+  .cdot-plan{background:var(--blue);}
+  .srv-list{display:flex;flex-direction:column;gap:7px;}
+  .srv-card{background:var(--surface2);border:1px solid var(--border);border-radius:13px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+  .srv-date-col{min-width:85px;}
+  .srv-day{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;margin-bottom:2px;}
+  .srv-time{font-size:11px;color:var(--muted);}
+  .srv-prog{flex:1;}
+  .srv-prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+  .srv-prog-name{font-size:11px;font-weight:600;}
+  .srv-prog-pct{font-size:11px;font-weight:800;color:var(--accent);}
+  .srv-prog-bg{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;}
+  .srv-prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .srv-avs{display:flex;gap:3px;}
+  .srv-av{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;border:2px solid var(--surface2);margin-left:-3px;}
+  .srv-av:first-child{margin-left:0;}
+  .spill{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:14px;font-size:10px;font-weight:700;}
+  .spill-done{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+  .spill-live{background:rgba(249,115,22,.1);color:var(--accent);border:1px solid rgba(249,115,22,.2);}
+  .spill-plan{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+
+</style>
+</head>
+<body>
+
+<!-- ======= SIDEBAR ======= -->
+<div class="sidebar">
+  <div class="logo">Shiftly<span>.</span></div>
+  <div class="centre-lbl">Bowling Central</div>
+  <div class="sec-lbl">Principal</div>
+  <div class="nav-item active" onclick="switchScreen('dashboard',this)"><div class="nav-icon">⚡</div>Dashboard</div>
+  <div class="nav-item" onclick="switchScreen('service',this)"><div class="nav-icon">🏠</div>Service du Jour</div>
+  <div class="nav-item" onclick="switchScreen('services',this)"><div class="nav-icon">📅</div>Services</div>
+  <div class="nav-item" onclick="switchScreen('postes',this)"><div class="nav-icon">📋</div>Postes</div>
+  <div class="nav-item" onclick="switchScreen('staff',this)"><div class="nav-icon">👥</div>Staff</div>
+  <div class="nav-item" onclick="switchScreen('tutoriels',this)"><div class="nav-icon">📚</div>Tutoriels<div class="nav-badge">3</div></div>
+  <div class="sec-lbl">Manager</div>
+  <div class="nav-item" onclick="switchScreen('incidents',this)"><div class="nav-icon">⚠️</div>Incidents<div class="nav-badge">2</div></div>
+  <div class="nav-item" onclick="switchScreen('reglages',this)"><div class="nav-icon">⚙️</div>Réglages</div>
+  <div class="sidebar-bot">
+    <div class="user-row">
+      <div class="user-av">K</div>
+      <div><div class="user-name">Kévin</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= MAIN ======= -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Bonjour, Kévin 👋</div>
+      <div class="topbar-sub" id="topbar-sub">Mercredi 18 mars 2026 · Bowling Central</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="top-date">📅 Mer. 18 mars</div>
+      <button class="top-btn">+ Signaler un incident</button>
+      <div class="notif-btn">🔔<div class="n-dot"></div></div>
+    </div>
+  </div>
+
+  <!-- ======= DASHBOARD ======= -->
+  <div class="content screen active" id="screen-dashboard">
+    <div class="hero">
+      <div>
+        <div class="hero-sup">Service en cours</div>
+        <div style="display:flex;align-items:center;gap:0">
+          <div class="hero-ttl">Mercredi 18 mars 2026</div>
+          <div class="live-badge"><div class="live-dot"></div>Live</div>
+        </div>
+        <div class="hero-meta">10h00 – 23h00 · Kévin (Manager responsable)</div>
+        <div class="prog-row">
+          <span class="prog-lbl">Progression globale</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:28%"></div></div>
+          <span class="prog-pct">28%</span>
+        </div>
+        <div class="prog-row">
+          <span class="prog-lbl" style="color:var(--blue)">Zone Accueil</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:40%;background:var(--blue)"></div></div>
+          <span class="prog-pct" style="color:var(--blue)">40%</span>
+        </div>
+        <div class="prog-row">
+          <span class="prog-lbl" style="color:var(--purple)">Zone Bar</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:17%;background:var(--purple)"></div></div>
+          <span class="prog-pct" style="color:var(--purple)">17%</span>
+        </div>
+        <div class="prog-row">
+          <span class="prog-lbl" style="color:var(--green)">Zone Salle</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:25%;background:var(--green)"></div></div>
+          <span class="prog-pct" style="color:var(--green)">25%</span>
+        </div>
+        <div class="av-row">
+          <span style="font-size:11px;color:var(--muted)">En service :</span>
+          <div class="avs">
+            <div class="av" style="background:var(--blue)">P</div>
+            <div class="av" style="background:var(--indigo)">A</div>
+            <div class="av" style="background:var(--purple)">G</div>
+            <div class="av" style="background:var(--green)">E</div>
+            <div class="av" style="background:#f59e0b">C</div>
+          </div>
+          <span style="font-size:11px;color:var(--muted);margin-left:5px">5 membres actifs</span>
+        </div>
+      </div>
+      <div class="hero-zones">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px">Par zone</div>
+        <div class="zone-row"><div class="zdot" style="background:var(--blue)"></div><div class="zname">Accueil</div><div class="zbar"><div class="zfill" style="width:40%;background:var(--blue)"></div></div><div class="zpct" style="color:var(--blue)">40%</div></div>
+        <div class="zone-row"><div class="zdot" style="background:var(--purple)"></div><div class="zname">Bar</div><div class="zbar"><div class="zfill" style="width:17%;background:var(--purple)"></div></div><div class="zpct" style="color:var(--purple)">17%</div></div>
+        <div class="zone-row"><div class="zdot" style="background:var(--green)"></div><div class="zname">Salle</div><div class="zbar"><div class="zfill" style="width:25%;background:var(--green)"></div></div><div class="zpct" style="color:var(--green)">25%</div></div>
+      </div>
+    </div>
+
+    <div class="stats4">
+      <div class="scard"><div class="scard-icon">📋</div><div class="scard-num" style="color:var(--accent)">5/18</div><div class="scard-lbl">Tâches du jour</div><span class="scard-trend tn">En cours</span></div>
+      <div class="scard"><div class="scard-icon">👥</div><div class="scard-num" style="color:var(--green)">10</div><div class="scard-lbl">Staff actifs</div><span class="scard-trend tg">+2 ce mois</span></div>
+      <div class="scard"><div class="scard-icon">⚠️</div><div class="scard-num" style="color:var(--red)">2</div><div class="scard-lbl">Incidents ouverts</div><span class="scard-trend tw">À traiter</span></div>
+      <div class="scard"><div class="scard-icon">📚</div><div class="scard-num" style="color:var(--purple)">44%</div><div class="scard-lbl">Tutos lus équipe</div><span class="scard-trend tn">Moy. équipe</span></div>
+    </div>
+
+    <div class="three-col">
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">⚠️ Incidents</div><div class="panel-act">+ Signaler</div></div>
+        <div class="inc-row"><div class="inc-ic h">⚠️</div><div style="flex:1"><div class="inc-ttl">Panne piste n°4 — retour boules</div><div class="inc-mt">Salle · 11h34 · Kévin</div><span class="inc-st st-o">Ouvert</span></div></div>
+        <div class="inc-row"><div class="inc-ic m">🍺</div><div style="flex:1"><div class="inc-ttl">Rupture bière pression — fût vide</div><div class="inc-mt">Bar · 14h12 · Kévin</div><span class="inc-st st-p">En cours</span></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">🏆 Progression équipe</div><div class="panel-act">Voir tout →</div></div>
+        <div class="tm-row"><div class="tm-a" style="background:linear-gradient(135deg,#f59e0b,#d97706)">P</div><div class="tm-n">Patou</div><div class="tm-bb"><div class="tm-bf" style="width:100%"></div></div><div class="tm-p">75 pts</div></div>
+        <div class="tm-row"><div class="tm-a" style="background:linear-gradient(135deg,var(--purple),#7c3aed)">G</div><div class="tm-n">Gabin</div><div class="tm-bb"><div class="tm-bf" style="width:87%"></div></div><div class="tm-p">65 pts</div></div>
+        <div class="tm-row"><div class="tm-a" style="background:linear-gradient(135deg,var(--indigo),#4f46e5)">A</div><div class="tm-n">Aya</div><div class="tm-bb"><div class="tm-bf" style="width:67%"></div></div><div class="tm-p">50 pts</div></div>
+        <div class="tm-row"><div class="tm-a" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">K</div><div class="tm-n">Kévin</div><div class="tm-bb"><div class="tm-bf" style="width:80%"></div></div><div class="tm-p">60 pts</div></div>
+        <div class="tm-row"><div class="tm-a" style="background:linear-gradient(135deg,var(--green),#16a34a)">E</div><div class="tm-n">Erwan</div><div class="tm-bb"><div class="tm-bf" style="width:47%"></div></div><div class="tm-p">35 pts</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">🔔 Alertes</div><div class="panel-act">Tout voir →</div></div>
+        <div class="al-row"><div class="al-d" style="background:var(--red)"></div><div class="al-t">2 incidents non clôturés</div><div class="al-tm">Auj.</div></div>
+        <div class="al-row"><div class="al-d" style="background:var(--yellow)"></div><div class="al-t">Hiba n'a lu aucun tutoriel</div><div class="al-tm">Hier</div></div>
+        <div class="al-row"><div class="al-d" style="background:var(--blue)"></div><div class="al-t">Nouveau tuto "Fermeture bar"</div><div class="al-tm">Mar.</div></div>
+        <div class="al-row"><div class="al-d" style="background:var(--green)"></div><div class="al-t">Patou — niveau Avancé 🎉</div><div class="al-tm">Lun.</div></div>
+        <div class="al-row"><div class="al-d" style="background:var(--purple)"></div><div class="al-t">Daniela ajoutée à l'équipe</div><div class="al-tm">Dim.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= SERVICE DU JOUR (mobile view in desktop) ======= -->
+  <div class="content screen" id="screen-service" style="padding:0;">
+    <div class="mobile-view">
+      <div class="phone">
+        <div class="mob-header">
+          <div class="mob-logo">Shiftly<span>.</span></div>
+          <div class="date-badge">Mer. 18 mars 2026</div>
+        </div>
+
+        <div class="srv-card">
+          <div class="srv-top">
+            <div><div class="srv-title">Service du Jour</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">Bowling Central</div></div>
+            <div class="status-badge"><div class="status-dot"></div>En cours</div>
+          </div>
+          <div class="srv-meta">
+            <div class="srv-meta-item">🕙 10h00 – 23h00</div>
+            <div class="srv-meta-item">👤 Kévin (Manager)</div>
+          </div>
+        </div>
+
+        <div class="mob-section">
+          <div class="mob-sec-lbl">Progression globale</div>
+          <div class="prog-card">
+            <div class="prog-hd"><span style="font-size:14px;font-weight:500">Tâches complétées</span><span class="prog-count" id="srv-count">5 / 18</span></div>
+            <div class="prog-bar-bg"><div class="prog-bar-fill" id="srv-global-bar" style="width:28%"></div></div>
+            <div class="zone-prog-list">
+              <div class="zone-prog-item"><div class="zone-tag zt-accueil">Accueil</div><div class="zone-bar-bg"><div class="zone-bar-fill" id="zbar-accueil" style="width:40%;background:var(--blue)"></div></div><div class="zone-pct" id="zpct-accueil">40%</div></div>
+              <div class="zone-prog-item"><div class="zone-tag zt-bar">Bar</div><div class="zone-bar-bg"><div class="zone-bar-fill" id="zbar-bar" style="width:17%;background:var(--purple)"></div></div><div class="zone-pct" id="zpct-bar">17%</div></div>
+              <div class="zone-prog-item"><div class="zone-tag zt-salle">Salle</div><div class="zone-bar-bg"><div class="zone-bar-fill" id="zbar-salle" style="width:25%;background:var(--green)"></div></div><div class="zone-pct" id="zpct-salle">25%</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mob-section">
+          <div class="mob-sec-lbl">Checklists de service</div>
+          <div class="tabs">
+            <button class="tab active" onclick="srvTab('accueil',this)">Accueil</button>
+            <button class="tab" onclick="srvTab('bar',this)">Bar</button>
+            <button class="tab" onclick="srvTab('salle',this)">Salle</button>
+          </div>
+
+          <div id="srv-tab-accueil">
+            <div class="cl-group">
+              <div class="cl-group-lbl">🔓 Ouverture</div>
+              <div class="cl-item done" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Être en tenue à l'heure</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item done" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Allumer ordinateurs, logiciels et TPE</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item done" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Vérifier le matériel d'accueil</div><div class="prio-dot prio-m"></div></div>
+              <div class="cl-item done" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Allumer lumières karaokés</div><div class="prio-dot prio-m"></div></div>
+            </div>
+            <div class="cl-group">
+              <div class="cl-group-lbl">⚡ Pendant le service</div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Vérifier toilettes après chaque pause</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Si anniversaires demain : préparer matériel</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Enregistrer les clients (bowling/billards/karaoké)</div><div class="prio-dot prio-h"></div></div>
+            </div>
+          </div>
+
+          <div id="srv-tab-bar" style="display:none">
+            <div class="cl-group">
+              <div class="cl-group-lbl">🔓 Ouverture</div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Vérifier stocks et réassort</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Allumer machines (café, bière pression)</div><div class="prio-dot prio-h"></div></div>
+            </div>
+            <div class="cl-group">
+              <div class="cl-group-lbl">⚡ Pendant le service</div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Préparer et servir les commandes</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Maintenir propreté du comptoir</div><div class="prio-dot prio-m"></div></div>
+            </div>
+          </div>
+
+          <div id="srv-tab-salle" style="display:none">
+            <div class="cl-group">
+              <div class="cl-group-lbl">🔓 Ouverture</div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Vérifier pistes (boules, quilles, retour)</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Mise en place et propreté salle</div><div class="prio-dot prio-h"></div></div>
+            </div>
+            <div class="cl-group">
+              <div class="cl-group-lbl">⚡ Pendant le service</div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Vérifier chaussures (état, usure, taille)</div><div class="prio-dot prio-h"></div></div>
+              <div class="cl-item" onclick="toggleTask(this)"><div class="checkbox"><span class="chk">✓</span></div><div class="task-txt">Ranger chaussures de bas en haut (5-6×/jour)</div><div class="prio-dot prio-m"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= SERVICES JOURNALIERS ======= -->
+  <div class="content screen" id="screen-services">
+    <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:16px">
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">Mars 2026</div><div style="display:flex;gap:5px"><div style="width:26px;height:26px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);cursor:pointer">‹</div><div style="width:26px;height:26px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);cursor:pointer">›</div></div></div>
+        <div class="cal-grid">
+          <div class="cal-lbl-h">L</div><div class="cal-lbl-h">M</div><div class="cal-lbl-h">M</div><div class="cal-lbl-h">J</div><div class="cal-lbl-h">V</div><div class="cal-lbl-h">S</div><div class="cal-lbl-h">D</div>
+          <div class="cal-cell other-month">24</div><div class="cal-cell other-month">25</div><div class="cal-cell other-month">26</div><div class="cal-cell other-month">27</div><div class="cal-cell other-month">28</div><div class="cal-cell"><span>1</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>2</span><div class="cdot cdot-done"></div></div>
+          <div class="cal-cell"><span>3</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>4</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>5</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>6</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>7</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>8</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>9</span><div class="cdot cdot-done"></div></div>
+          <div class="cal-cell"><span>10</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>11</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>12</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>13</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>14</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>15</span><div class="cdot cdot-done"></div></div><div class="cal-cell"><span>16</span><div class="cdot cdot-done"></div></div>
+          <div class="cal-cell"><span>17</span><div class="cdot cdot-done"></div></div><div class="cal-cell today"><span>18</span><div class="cdot cdot-live"></div></div><div class="cal-cell selected"><span>19</span><div class="cdot cdot-plan"></div></div><div class="cal-cell"><span>20</span><div class="cdot cdot-plan"></div></div><div class="cal-cell"><span>21</span><div class="cdot cdot-plan"></div></div><div class="cal-cell"><span>22</span><div class="cdot cdot-plan"></div></div><div class="cal-cell"><span>23</span><div class="cdot cdot-plan"></div></div>
+          <div class="cal-cell">24</div><div class="cal-cell">25</div><div class="cal-cell">26</div><div class="cal-cell">27</div><div class="cal-cell">28</div><div class="cal-cell">29</div><div class="cal-cell">30</div>
+          <div class="cal-cell">31</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div class="cdot cdot-done"></div>Terminé</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div class="cdot cdot-live"></div>En cours</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div class="cdot cdot-plan"></div>Planifié</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">Services récents & à venir</div><div class="panel-act">Tout voir →</div></div>
+        <div class="srv-list">
+          <div class="srv-card"><div class="srv-date-col"><div class="srv-day">Jeu. 17 mars</div><div class="srv-time">10h – 23h · Mégane</div></div><div class="srv-prog"><div class="srv-prog-row"><span class="srv-prog-name">Complétion</span><span class="srv-prog-pct" style="color:var(--green)">94%</span></div><div class="srv-prog-bg"><div class="srv-prog-fill" style="width:94%;background:var(--green)"></div></div></div><div class="srv-avs"><div class="srv-av" style="background:#f59e0b">P</div><div class="srv-av" style="background:var(--green)">E</div></div><div class="spill spill-done">✓ Terminé</div></div>
+          <div class="srv-card" style="border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.03)"><div class="srv-date-col"><div class="srv-day">Mer. 18 mars</div><div class="srv-time">10h – 23h · Kévin</div></div><div class="srv-prog"><div class="srv-prog-row"><span class="srv-prog-name">En cours</span><span class="srv-prog-pct">28%</span></div><div class="srv-prog-bg"><div class="srv-prog-fill" style="width:28%"></div></div></div><div class="srv-avs"><div class="srv-av" style="background:var(--blue)">P</div><div class="srv-av" style="background:var(--indigo)">A</div><div class="srv-av" style="background:var(--purple)">G</div></div><div class="spill spill-live">● Live</div></div>
+          <div class="srv-card"><div class="srv-date-col"><div class="srv-day">Jeu. 19 mars</div><div class="srv-time">10h – 23h · Micka</div></div><div class="srv-prog"><div class="srv-prog-row"><span class="srv-prog-name">Planifié</span><span class="srv-prog-pct" style="color:var(--muted)">—</span></div><div class="srv-prog-bg"><div class="srv-prog-fill" style="width:0%"></div></div></div><div class="srv-avs"><div class="srv-av" style="background:var(--indigo)">A</div><div class="srv-av" style="background:var(--red)">H</div></div><div class="spill spill-plan">◌ Planifié</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="stats4">
+      <div class="scard"><div class="scard-icon">✅</div><div class="scard-num" style="color:var(--green)">17</div><div class="scard-lbl">Services terminés ce mois</div></div>
+      <div class="scard"><div class="scard-icon">⚡</div><div class="scard-num" style="color:var(--accent)">1</div><div class="scard-lbl">Service en cours</div></div>
+      <div class="scard"><div class="scard-icon">📅</div><div class="scard-num" style="color:var(--blue)">3</div><div class="scard-lbl">Services planifiés</div></div>
+      <div class="scard"><div class="scard-icon">📊</div><div class="scard-num" style="color:var(--purple)">89%</div><div class="scard-lbl">Taux moyen complétion</div><span class="scard-trend tg">+4% vs mois dernier</span></div>
+    </div>
+  </div>
+
+  <!-- ======= POSTES ======= -->
+  <div class="content screen" id="screen-postes" style="padding:0;">
+    <div class="mobile-view">
+      <div class="phone">
+        <div class="mob-header"><div class="mob-logo">Shiftly<span>.</span></div><div class="date-badge">Mer. 18 mars</div></div>
+        <div class="mob-page-title">Fiches Postes</div>
+        <div class="mob-page-sub">Missions, compétences et responsabilités par zone</div>
+        <div class="filter-tabs" style="margin-bottom:14px">
+          <button class="ftab" style="background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.4);color:var(--blue)" onclick="postesZone('accueil',this)">● Accueil</button>
+          <button class="ftab" onclick="postesZone('bar',this)">● Bar</button>
+          <button class="ftab" onclick="postesZone('salle',this)">● Salle</button>
+        </div>
+        <div id="postes-accueil">
+          <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:18px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue)"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+              <div><div style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800">🎳 Accueil</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Gestion clients & opérations</div></div>
+              <div style="display:flex;gap:8px"><div style="text-align:center;background:var(--surface);border-radius:9px;padding:7px 11px"><div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--blue)">8</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Compét.</div></div><div style="text-align:center;background:var(--surface);border-radius:9px;padding:7px 11px"><div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--accent)">10</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Missions</div></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:11px;color:var(--muted)">Assignés :</span><div style="display:flex;align-items:center;gap:5px;background:var(--surface);border-radius:20px;padding:3px 9px 3px 4px;font-size:12px"><div style="width:20px;height:20px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">P</div>Patou</div><div style="display:flex;align-items:center;gap:5px;background:var(--surface);border-radius:20px;padding:3px 9px 3px 4px;font-size:12px"><div style="width:20px;height:20px;border-radius:50%;background:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">A</div>Aya</div></div>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px">Compétences clés</div>
+          <div class="tuto-list">
+            <div class="tuto-card" onclick="this.classList.toggle('expanded')"><div class="tuto-card-hd"><div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">👋</div><div class="tuto-main"><div class="tuto-title">Accueil client et gestion du flux</div><div class="tuto-tags"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.15)">Simple</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2)">Vitale</span></div></div><div class="tuto-right"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 7px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent)">10 pts</div><div class="expand-arr">▼</div></div></div><div class="tuto-content"><p style="font-size:13px;color:var(--muted);line-height:1.6">Accueillir, orienter, gérer l'attente, rester calme et souriant même en période de rush.</p></div></div>
+            <div class="tuto-card" onclick="this.classList.toggle('expanded')"><div class="tuto-card-hd"><div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">💳</div><div class="tuto-main"><div class="tuto-title">Encaissement et clôture de caisse</div><div class="tuto-tags"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(249,115,22,.1);color:var(--accent);border:1px solid rgba(249,115,22,.15)">Avancée</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2)">Vitale</span></div></div><div class="tuto-right"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 7px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent)">20 pts</div><div class="expand-arr">▼</div></div></div><div class="tuto-content"><p style="font-size:13px;color:var(--muted);line-height:1.6">Procédures d'encaissement, gestion des moyens de paiement, contrôle des écarts, clôture en fin de service.</p></div></div>
+            <div class="tuto-card" onclick="this.classList.toggle('expanded')"><div class="tuto-card-hd"><div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">😤</div><div class="tuto-main"><div class="tuto-title">Gestion des réclamations clients</div><div class="tuto-tags"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(168,85,247,.1);color:var(--purple);border:1px solid rgba(168,85,247,.15)">Expérimenté</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2)">Vitale</span></div></div><div class="tuto-right"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 7px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent)">30 pts</div><div class="expand-arr">▼</div></div></div><div class="tuto-content"><p style="font-size:13px;color:var(--muted);line-height:1.6">Écoute active, reformulation, proposition de solution, savoir quand escalader au manager.</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= STAFF ======= -->
+  <div class="content screen" id="screen-staff" style="padding:0;">
+    <div class="mobile-view">
+      <div class="phone">
+        <div class="mob-header"><div class="mob-logo">Shiftly<span>.</span></div><div class="date-badge">Mer. 18 mars</div></div>
+        <div class="mob-page-title">Staff</div>
+        <div class="mob-page-sub">Équipe, compétences et progression</div>
+        <div class="mob-stats3">
+          <div class="mob-scard"><div class="mob-snum" style="color:var(--accent)">12</div><div class="mob-slbl">Membres</div></div>
+          <div class="mob-scard"><div class="mob-snum" style="color:var(--green)">10</div><div class="mob-slbl">Actifs</div></div>
+          <div class="mob-scard"><div class="mob-snum" style="color:var(--blue)">3</div><div class="mob-slbl">Managers</div></div>
+        </div>
+        <div class="search-bar"><span style="color:var(--muted);font-size:15px">🔍</span><input type="text" placeholder="Rechercher un membre..."></div>
+        <div class="filter-tabs">
+          <button class="ftab active">Tous</button>
+          <button class="ftab">Managers</button>
+          <button class="ftab">Membres</button>
+          <button class="ftab">Accueil</button>
+          <button class="ftab">Bar</button>
+          <button class="ftab">Salle</button>
+        </div>
+        <div class="members-list">
+          <div class="member-card" onclick="this.classList.toggle('expanded')">
+            <div class="mcmain">
+              <div class="m-av" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">K<div class="av-status"></div></div>
+              <div class="m-info"><div class="m-name">Kévin</div><div class="m-meta"><span class="role-badge rb-manager">Manager</span><span class="hrs-badge">39h/sem</span></div></div>
+              <div class="m-right"><div class="pts-total">60 <span>pts</span></div><div class="lvl-bar-bg"><div class="lvl-bar-fill" style="width:60%"></div></div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="m-detail">
+              <div class="det-sec"><div class="det-lbl">Zones maîtrisées</div><div class="zones-row"><span class="zone-chip zc-accueil">Accueil</span><span class="zone-chip zc-bar">Bar</span><span class="zone-chip zc-salle">Salle</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Niveau global</div><div class="lvl-row"><div class="lvl-dots"><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot"></div><div class="ldot"></div></div><span class="lvl-lbl">Expérimenté</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Vêtements</div><div class="vet-box">2 polo manches longues · 1 sweat</div></div>
+            </div>
+          </div>
+          <div class="member-card" onclick="this.classList.toggle('expanded')">
+            <div class="mcmain">
+              <div class="m-av" style="background:linear-gradient(135deg,#f59e0b,#d97706)">P<div class="av-status"></div></div>
+              <div class="m-info"><div class="m-name">Patou</div><div class="m-meta"><span class="role-badge rb-membre">Membre</span><span class="hrs-badge">35h/sem</span></div></div>
+              <div class="m-right"><div class="pts-total">75 <span>pts</span></div><div class="lvl-bar-bg"><div class="lvl-bar-fill" style="width:85%"></div></div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="m-detail">
+              <div class="det-sec"><div class="det-lbl">Zones maîtrisées</div><div class="zones-row"><span class="zone-chip zc-accueil">Accueil</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Niveau global</div><div class="lvl-row"><div class="lvl-dots"><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot"></div></div><span class="lvl-lbl">Avancé</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Vêtements</div><div class="vet-box">1 veste sans manche</div></div>
+            </div>
+          </div>
+          <div class="member-card" onclick="this.classList.toggle('expanded')">
+            <div class="mcmain">
+              <div class="m-av" style="background:linear-gradient(135deg,var(--purple),#7c3aed)">G<div class="av-status"></div></div>
+              <div class="m-info"><div class="m-name">Gabin</div><div class="m-meta"><span class="role-badge rb-membre">Membre</span><span class="hrs-badge">25h/sem</span></div></div>
+              <div class="m-right"><div class="pts-total">65 <span>pts</span></div><div class="lvl-bar-bg"><div class="lvl-bar-fill" style="width:75%"></div></div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="m-detail">
+              <div class="det-sec"><div class="det-lbl">Zones maîtrisées</div><div class="zones-row"><span class="zone-chip zc-bar">Bar</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Niveau global</div><div class="lvl-row"><div class="lvl-dots"><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot"></div></div><span class="lvl-lbl">Avancé</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Vêtements</div><div class="vet-box">1 polo manches longues + 2 t-shirts</div></div>
+            </div>
+          </div>
+          <div class="member-card" onclick="this.classList.toggle('expanded')">
+            <div class="mcmain">
+              <div class="m-av" style="background:linear-gradient(135deg,var(--indigo),#4f46e5)">A<div class="av-status"></div></div>
+              <div class="m-info"><div class="m-name">Aya</div><div class="m-meta"><span class="role-badge rb-membre">Membre</span><span class="hrs-badge">15h/sem</span></div></div>
+              <div class="m-right"><div class="pts-total">50 <span>pts</span></div><div class="lvl-bar-bg"><div class="lvl-bar-fill" style="width:55%"></div></div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="m-detail">
+              <div class="det-sec"><div class="det-lbl">Zones maîtrisées</div><div class="zones-row"><span class="zone-chip zc-accueil">Accueil</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Niveau global</div><div class="lvl-row"><div class="lvl-dots"><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot"></div><div class="ldot"></div></div><span class="lvl-lbl">Intermédiaire</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Vêtements</div><div class="vet-box">—</div></div>
+            </div>
+          </div>
+          <div class="member-card" onclick="this.classList.toggle('expanded')">
+            <div class="mcmain">
+              <div class="m-av" style="background:linear-gradient(135deg,var(--green),#16a34a)">E<div class="av-status"></div></div>
+              <div class="m-info"><div class="m-name">Erwan</div><div class="m-meta"><span class="role-badge rb-membre">Membre</span><span class="hrs-badge">39h/sem</span></div></div>
+              <div class="m-right"><div class="pts-total">35 <span>pts</span></div><div class="lvl-bar-bg"><div class="lvl-bar-fill" style="width:45%"></div></div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="m-detail">
+              <div class="det-sec"><div class="det-lbl">Zones maîtrisées</div><div class="zones-row"><span class="zone-chip zc-salle">Salle</span><span class="zone-chip zc-accueil">Accueil</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Niveau global</div><div class="lvl-row"><div class="lvl-dots"><div class="ldot filled"></div><div class="ldot filled"></div><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div><span class="lvl-lbl">Intermédiaire</span></div></div>
+              <div class="det-sec"><div class="det-lbl">Vêtements</div><div class="vet-box">2 t-shirts · 1 polo manches courtes</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= TUTORIELS ======= -->
+  <div class="content screen" id="screen-tutoriels" style="padding:0;">
+    <div class="mobile-view">
+      <div class="phone">
+        <div class="mob-header"><div class="mob-logo">Shiftly<span>.</span></div><div class="date-badge">Mer. 18 mars</div></div>
+        <div class="mob-page-title">Tutoriels</div>
+        <div class="mob-page-sub">Procédures internes et guides opérationnels</div>
+        <div class="prog-banner">
+          <div class="prog-circle"><div class="prog-circle-inner" id="tuto-pct">33%</div></div>
+          <div class="prog-info">
+            <div class="prog-title">Ta progression</div>
+            <div class="prog-sub"><strong id="tuto-read-count">4 tutoriels lus</strong> sur 9 disponibles</div>
+            <div class="prog-sub" style="margin-top:2px">Continue pour monter en compétence 💪</div>
+          </div>
+        </div>
+        <div class="search-bar"><span style="color:var(--muted);font-size:15px">🔍</span><input type="text" placeholder="Rechercher un tutoriel..."></div>
+        <div class="filter-tabs">
+          <button class="ftab active">Tous</button>
+          <button class="ftab">Accueil</button>
+          <button class="ftab">Bar</button>
+          <button class="ftab">Salle</button>
+          <button class="ftab">Manager</button>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:9px">À lire en priorité</div>
+        <div class="featured-card">
+          <div class="read-indicator ri-unread">✓</div>
+          <div class="feat-badge">⭐ Essentiel</div>
+          <div class="feat-title">Comment gérer l'arrivée d'un groupe / anniversaire</div>
+          <div class="feat-meta"><span class="feat-tag ft-accueil">Accueil</span><span class="lvl-tag lt-debutant">Débutant</span><span class="dur-tag">⏱ 5 min</span></div>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:9px">Tous les tutoriels</div>
+        <div class="tuto-list">
+          <div class="tuto-card" onclick="this.classList.toggle('expanded')">
+            <div class="tuto-card-hd">
+              <div class="tuto-icon" style="background:rgba(59,130,246,.1)">🎳</div>
+              <div class="tuto-main"><div class="tuto-title">Procédure d'ouverture du bowling</div><div class="tuto-tags"><span class="feat-tag ft-accueil">Accueil</span><span class="lvl-tag lt-debutant">Débutant</span><span class="dur-tag">⏱ 3 min</span></div></div>
+              <div class="tuto-right"><div class="read-indicator ri-read" style="position:static">✓</div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="tuto-content">
+              <div class="tuto-steps">
+                <div class="step"><div class="step-num">1</div><div class="step-text">Arriver 15 min avant l'ouverture et vérifier sa tenue complète.</div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-text">Allumer dans l'ordre : boîtier principal → ordinateurs → logiciel → TPE.</div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-text">Vérifier matériel accueil : rouleaux caisse, imprimante, médailles.</div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-text">Consulter le cahier de réservations et signaler les groupes au manager.</div></div>
+              </div>
+              <div class="tuto-tip">💡 En cas de panne logiciel au démarrage, appeler le manager immédiatement.</div>
+              <button class="mark-btn done">✓ Tutoriel lu</button>
+            </div>
+          </div>
+          <div class="tuto-card" onclick="this.classList.toggle('expanded')">
+            <div class="tuto-card-hd">
+              <div class="tuto-icon" style="background:rgba(168,85,247,.1)">🍺</div>
+              <div class="tuto-main"><div class="tuto-title">Utiliser les équipements du bar (café, bière pression)</div><div class="tuto-tags"><span class="feat-tag ft-bar">Bar</span><span class="lvl-tag lt-debutant">Débutant</span><span class="dur-tag">⏱ 4 min</span></div></div>
+              <div class="tuto-right"><div class="read-indicator ri-unread" style="position:static">✓</div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="tuto-content">
+              <div class="tuto-steps">
+                <div class="step"><div class="step-num">1</div><div class="step-text">Machine à café : allumer 15 min avant l'ouverture, rincer avant le premier service.</div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-text">Bière pression : vérifier pression gaz (indicateur vert), purger 2-3 secondes.</div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-text">En fin de service : nettoyer les buses, vider les bacs à condensation.</div></div>
+              </div>
+              <div class="tuto-tip">💡 Un verre à bière doit toujours être rincé à l'eau froide avant service.</div>
+              <button class="mark-btn">Marquer comme lu</button>
+            </div>
+          </div>
+          <div class="tuto-card" onclick="this.classList.toggle('expanded')">
+            <div class="tuto-card-hd">
+              <div class="tuto-icon" style="background:rgba(34,197,94,.1)">👟</div>
+              <div class="tuto-main"><div class="tuto-title">Gestion des chaussures de bowling</div><div class="tuto-tags"><span class="feat-tag ft-salle">Salle</span><span class="lvl-tag lt-debutant">Débutant</span><span class="dur-tag">⏱ 3 min</span></div></div>
+              <div class="tuto-right"><div class="read-indicator ri-unread" style="position:static">✓</div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="tuto-content">
+              <div class="tuto-steps">
+                <div class="step"><div class="step-num">1</div><div class="step-text">Vérifier l'état de chaque chaussure : semelle non usée, lacets intacts.</div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-text">Ranger systématiquement par taille, de bas en haut, 5-6 fois par service.</div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-text">Chaussures abîmées → mettre de côté avec étiquette "hors service".</div></div>
+              </div>
+              <div class="tuto-tip">💡 Ne jamais donner une chaussure dont la semelle est lisse — risque de glissade.</div>
+              <button class="mark-btn">Marquer comme lu</button>
+            </div>
+          </div>
+          <div class="tuto-card" onclick="this.classList.toggle('expanded')">
+            <div class="tuto-card-hd">
+              <div class="tuto-icon" style="background:rgba(249,115,22,.1)">📋</div>
+              <div class="tuto-main"><div class="tuto-title">Organiser et briefer un service</div><div class="tuto-tags"><span class="feat-tag ft-manager">Manager</span><span class="lvl-tag" style="background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.15)">Avancé</span><span class="dur-tag">⏱ 6 min</span></div></div>
+              <div class="tuto-right"><div class="read-indicator ri-read" style="position:static">✓</div><div class="expand-arr">▼</div></div>
+            </div>
+            <div class="tuto-content">
+              <div class="tuto-steps">
+                <div class="step"><div class="step-num">1</div><div class="step-text">30 min avant : consulter réservations du jour, identifier pics d'affluence.</div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-text">Assigner les postes dans Shiftly selon compétences et disponibilités.</div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-text">Briefing équipe : 5 min debout, infos clés, réponses aux questions.</div></div>
+              </div>
+              <div class="tuto-tip">💡 Un briefing efficace = 5 min max, debout, avec les yeux sur l'équipe.</div>
+              <button class="mark-btn done">✓ Tutoriel lu</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= INCIDENTS ======= -->
+  <div class="content screen" id="screen-incidents">
+    <div class="stats4" style="grid-template-columns:repeat(3,1fr)">
+      <div class="scard"><div class="scard-icon">🔴</div><div class="scard-num" style="color:var(--red)">2</div><div class="scard-lbl">Incidents ouverts</div><span class="scard-trend tw">À traiter</span></div>
+      <div class="scard"><div class="scard-icon">🟡</div><div class="scard-num" style="color:var(--yellow)">1</div><div class="scard-lbl">En cours</div></div>
+      <div class="scard"><div class="scard-icon">✅</div><div class="scard-num" style="color:var(--green)">14</div><div class="scard-lbl">Clôturés ce mois</div><span class="scard-trend tg">Ce mois</span></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd"><div class="panel-title">⚠️ Incidents ouverts</div><button class="top-btn" style="font-size:11px;padding:6px 12px">+ Signaler un incident</button></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:14px">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⚠️</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:3px">Panne piste n°4 — retour boules</div><div style="font-size:11px;color:var(--muted);margin-bottom:5px">Salle · 11h34 · Kévin · Sévérité : Haute</div><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,.1);color:var(--red)">Ouvert</span></div>
+          <button style="padding:6px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer">Clôturer</button>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:rgba(234,179,8,.03);border:1px solid rgba(234,179,8,.15);border-radius:14px">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(234,179,8,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🍺</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:3px">Rupture bière pression — fût vide</div><div style="font-size:11px;color:var(--muted);margin-bottom:5px">Bar · 14h12 · Kévin · Sévérité : Moyenne</div><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(234,179,8,.1);color:var(--yellow)">En cours</span></div>
+          <button style="padding:6px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer">Clôturer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= RÉGLAGES ======= -->
+  <div class="content screen" id="screen-reglages" style="padding:0;">
+    <div class="mobile-view">
+      <div class="phone">
+        <div class="mob-header"><div class="mob-logo">Shiftly<span>.</span></div><div class="date-badge">Mer. 18 mars</div></div>
+        <div class="srv-card" style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:13px;margin-bottom:14px">
+            <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;flex-shrink:0">K</div>
+            <div style="flex:1"><div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;margin-bottom:5px">Kévin V.</div><span style="display:inline-flex;align-items:center;gap:4px;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25);color:var(--accent);border-radius:7px;padding:3px 9px;font-size:11px;font-weight:700;text-transform:uppercase">⚡ Manager</span></div>
+            <button style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer">Modifier</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:9px;text-align:center"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--accent)">60</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px">Points</div></div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:9px;text-align:center"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--green)">39h</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px">Contrat</div></div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:9px;text-align:center"><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--blue)">3</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px">Zones</div></div>
+          </div>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:9px">Mon centre</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <div style="width:44px;height:44px;border-radius:13px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎳</div>
+          <div style="flex:1"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:2px">Bowling Central</div><div style="font-size:12px;color:var(--muted)">Paris 15e · 12 membres · 3 zones</div></div>
+          <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)">Actif</span>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:9px">Général</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"><div style="width:34px;height:34px;border-radius:9px;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;font-size:15px">🏢</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Informations du centre</div><div style="font-size:11px;color:var(--muted)">Nom, adresse, type d'activité</div></div><span style="color:var(--muted);font-size:13px">›</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"><div style="width:34px;height:34px;border-radius:9px;background:rgba(249,115,22,.1);display:flex;align-items:center;justify-content:center;font-size:15px">🕐</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Horaires d'ouverture</div><div style="font-size:11px;color:var(--muted)">Plages horaires par jour</div></div><span style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:2px 9px;font-size:12px;color:var(--muted)">10h–23h</span><span style="color:var(--muted);font-size:13px;margin-left:7px">›</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"><div style="width:34px;height:34px;border-radius:9px;background:rgba(34,197,94,.1);display:flex;align-items:center;justify-content:center;font-size:15px">🗂️</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Gestion des zones</div><div style="font-size:11px;color:var(--muted)">Accueil, Bar, Salle</div></div><span style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:2px 9px;font-size:12px;color:var(--muted)">3 zones</span><span style="color:var(--muted);font-size:13px;margin-left:7px">›</span></div>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:9px">Notifications</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border)"><div style="width:34px;height:34px;border-radius:9px;background:rgba(234,179,8,.1);display:flex;align-items:center;justify-content:center;font-size:15px">🔔</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Rappels d'ouverture</div><div style="font-size:11px;color:var(--muted)">Notifier 30 min avant le service</div></div><div style="width:42px;height:23px;border-radius:11px;background:var(--green);position:relative;cursor:pointer;flex-shrink:0" onclick="this.style.background=this.style.background===''||this.style.background==='var(--green)'?'var(--surface2)':'var(--green)'"><div style="position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:all .25s"></div></div></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px"><div style="width:34px;height:34px;border-radius:9px;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;font-size:15px">📚</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Nouveaux tutoriels</div><div style="font-size:11px;color:var(--muted)">Notifier quand un tuto est ajouté</div></div><div style="width:42px;height:23px;border-radius:11px;background:var(--surface2);border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0"><div style="position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:50%;background:var(--muted);transition:all .25s"></div></div></div>
+        </div>
+        <div style="text-align:center;padding:8px;font-size:11px;color:var(--muted)"><strong style="color:var(--accent);font-family:'Syne',sans-serif">Shiftly</strong> v1.0.0 · Système de management opérationnel</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<script>
+function switchScreen(id, navItem) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  navItem.classList.add('active');
+  const titles = {
+    dashboard: ['Bonjour, Kévin 👋', 'Mercredi 18 mars 2026 · Bowling Central'],
+    service:   ['Service du Jour', 'Mercredi 18 mars 2026 · En cours'],
+    services:  ['Services Journaliers', 'Planning et historique · Mars 2026'],
+    postes:    ['Fiches Postes', 'Missions, compétences et responsabilités'],
+    staff:     ['Staff', 'Équipe, compétences et progression'],
+    tutoriels: ['Tutoriels', 'Procédures internes et guides opérationnels'],
+    incidents: ['Incidents', 'Gestion et suivi des incidents'],
+    reglages:  ['Réglages', 'Configuration du centre et du compte'],
+  };
+  document.getElementById('topbar-title').textContent = titles[id]?.[0] || '';
+  document.getElementById('topbar-sub').textContent = titles[id]?.[1] || '';
+}
+
+function srvTab(zone, btn) {
+  document.querySelectorAll('#screen-service .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['accueil','bar','salle'].forEach(z => {
+    const el = document.getElementById('srv-tab-'+z);
+    if(el) el.style.display = z === zone ? 'block' : 'none';
+  });
+}
+
+function toggleTask(el) {
+  el.classList.toggle('done');
+  updateProgress();
+}
+
+function updateProgress() {
+  const zones = ['accueil','bar','salle'];
+  let totalDone = 0, totalAll = 0;
+  zones.forEach(zone => {
+    const tab = document.getElementById('srv-tab-' + zone);
+    if(!tab) return;
+    const items = tab.querySelectorAll('.cl-item');
+    const done = tab.querySelectorAll('.cl-item.done').length;
+    const pct = items.length ? Math.round((done / items.length) * 100) : 0;
+    const bar = document.getElementById('zbar-' + zone);
+    const pctEl = document.getElementById('zpct-' + zone);
+    if(bar) bar.style.width = pct + '%';
+    if(pctEl) pctEl.textContent = pct + '%';
+    totalDone += done;
+    totalAll += items.length;
+  });
+  const globalPct = totalAll ? Math.round((totalDone / totalAll) * 100) : 0;
+  const gbar = document.getElementById('srv-global-bar');
+  const gcnt = document.getElementById('srv-count');
+  if(gbar) gbar.style.width = globalPct + '%';
+  if(gcnt) gcnt.textContent = totalDone + ' / ' + totalAll;
+}
+
+updateProgress();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Env files (tokens, secrets)
+shiftly-app/.env.local
+shiftly-api/.env.local
+
+# Database SQLite
+shiftly-api/var/data_*.db
+
+# JWT keys
+shiftly-api/config/jwt/private.pem
+shiftly-api/config/jwt/public.pem
+
+# Dependencies
+shiftly-app/node_modules/
+shiftly-api/vendor/
+
+# Build / cache
+shiftly-app/.next/
+shiftly-api/var/

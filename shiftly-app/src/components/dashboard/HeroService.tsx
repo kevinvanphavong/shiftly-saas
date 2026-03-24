@@ -1,0 +1,127 @@
+import { cn } from '@/lib/cn'
+import type { DashboardService } from '@/types/dashboard'
+
+interface HeroServiceProps {
+  data: DashboardService
+}
+
+const RADIUS = 38
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+
+const STATUT_LABEL: Record<string, string> = {
+  PLANIFIE: 'Planifié',
+  EN_COURS: 'En cours',
+  TERMINE:  'Terminé',
+}
+const STATUT_COLOR: Record<string, string> = {
+  PLANIFIE: 'text-blue   bg-blue/10',
+  EN_COURS: 'text-green  bg-green/10',
+  TERMINE:  'text-muted  bg-surface2',
+}
+
+/** Hero card — service du jour + jauge circulaire d'occupation */
+export default function HeroService({ data }: HeroServiceProps) {
+  const { today, tauxOccupation } = data
+
+  if (!today) {
+    return (
+      <div className="relative bg-surface border border-border rounded-[18px] p-5 overflow-hidden accent-bar">
+        <p className="text-muted text-[13px]">Aucun service planifié aujourd&apos;hui.</p>
+      </div>
+    )
+  }
+
+  const pct        = Math.max(0, Math.min(100, tauxOccupation))
+  const dashOffset = CIRCUMFERENCE * (1 - pct / 100)
+
+  return (
+    <div className="relative bg-surface border border-border rounded-[18px] p-5 overflow-hidden accent-bar">
+      {/* Subtle background glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent pointer-events-none" />
+
+      <div className="relative flex items-center justify-between gap-4">
+        {/* ── Left: service info ── */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-3">
+            <span
+              className={cn(
+                'text-[10px] font-extrabold font-syne uppercase tracking-wider px-2 py-0.5 rounded-[6px]',
+                STATUT_COLOR[today.statut] ?? 'text-muted bg-surface2'
+              )}
+            >
+              {STATUT_LABEL[today.statut] ?? today.statut}
+            </span>
+            <span className="text-[11px] text-muted">Service du jour</span>
+          </div>
+
+          <div className="font-syne font-extrabold text-[28px] lg:text-[34px] text-text leading-none mb-1">
+            {today.heureDebut}
+            <span className="text-muted font-normal text-[16px] mx-1.5">→</span>
+            {today.heureFin}
+          </div>
+
+          <p className="text-[12px] text-muted mt-2">
+            {today.nbPostes} postes · {new Date(today.date).toLocaleDateString('fr-FR', {
+              weekday: 'long', day: 'numeric', month: 'long',
+            })}
+          </p>
+
+          {/* Linear progress fallback (mobile-friendly) */}
+          <div className="mt-4 hidden sm:block lg:hidden">
+            <div className="flex justify-between text-[11px] mb-1.5">
+              <span className="text-muted">Avancement missions</span>
+              <span className="text-accent font-bold">{pct.toFixed(0)}%</span>
+            </div>
+            <div className="h-1.5 bg-surface2 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-accent to-accent-light transition-all duration-700"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right: circular progress ── */}
+        <div className="relative flex-shrink-0 w-[96px] h-[96px]">
+          <svg
+            viewBox="0 0 100 100"
+            className="w-full h-full -rotate-90"
+            aria-label={`${pct.toFixed(0)}% d'avancement`}
+          >
+            {/* Track */}
+            <circle
+              cx="50" cy="50" r={RADIUS}
+              fill="none"
+              stroke="#252a3a"
+              strokeWidth="7"
+            />
+            {/* Progress */}
+            <circle
+              cx="50" cy="50" r={RADIUS}
+              fill="none"
+              stroke="url(#arcGradient)"
+              strokeWidth="7"
+              strokeLinecap="round"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={dashOffset}
+              className="transition-all duration-700 ease-out"
+            />
+            <defs>
+              <linearGradient id="arcGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"   stopColor="#f97316" />
+                <stop offset="100%" stopColor="#fb923c" />
+              </linearGradient>
+            </defs>
+          </svg>
+          {/* Center label */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-syne font-extrabold text-[22px] text-text leading-none">
+              {pct.toFixed(0)}%
+            </span>
+            <span className="text-[9px] text-muted mt-0.5 uppercase tracking-wide">missions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
