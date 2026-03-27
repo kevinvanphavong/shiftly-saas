@@ -5,8 +5,9 @@ import { motion }               from 'framer-motion'
 import { listVariants, listItemVariants } from '@/lib/animations'
 import { useAuthStore }         from '@/store/authStore'
 import { useServices, useDeleteService, useAddServiceNote } from '@/hooks/useServices'
-import ServiceCard              from '@/components/services/ServiceCard'
-import ModalCreateService       from '@/components/services/ModalCreateService'
+import { isTodayService } from '@/lib/serviceUtils'
+import ServiceCard         from '@/components/services/ServiceCard'
+import ModalCreateService  from '@/components/services/ModalCreateService'
 
 // ─── Page Planning ────────────────────────────────────────────────────────────
 
@@ -63,7 +64,9 @@ export default function ServicesPage() {
     )
   }
 
-  const services = data ?? []
+  const services      = data ?? []
+  const todayService  = services.find(s => isTodayService(s.date))
+  const otherServices = services.filter(s => !isTodayService(s.date))
 
   // ── Empty state ────────────────────────────────────────────────────────────
 
@@ -137,31 +140,56 @@ export default function ServicesPage() {
         )}
       </div>
 
-      {/* Cartes (date décroissante — déjà triées par le backend) */}
-      <motion.div
-        className="flex flex-col gap-3"
-        variants={listVariants}
-        initial="hidden"
-        animate="show"
-      >
-        {services.map(service => (
-          <motion.div key={service.id} variants={listItemVariants}>
-            <ServiceCard
-              service={service}
-              isManager={!!isManager}
-              onDelete={isManager ? (id) => {
-                if (window.confirm('Supprimer ce service ? Cette action est irréversible.')) {
-                  deleteService(id)
-                }
-              } : undefined}
-              onAddNote={isManager
-                ? (id, note) => addNote({ serviceId: id, note })
-                : undefined
+      {/* ── Aujourd'hui ─────────────────────────────────────────────────────── */}
+      {todayService && (
+        <div className="mb-5">
+          <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
+            Aujourd'hui
+          </p>
+          <ServiceCard
+            service={todayService}
+            isManager={!!isManager}
+            onDelete={isManager ? (id) => {
+              if (window.confirm('Supprimer ce service ? Cette action est irréversible.')) {
+                deleteService(id)
               }
-            />
+            } : undefined}
+            onAddNote={isManager ? (id, note) => addNote({ serviceId: id, note }) : undefined}
+          />
+        </div>
+      )}
+
+      {/* ── Planning ─────────────────────────────────────────────────────────── */}
+      {otherServices.length > 0 && (
+        <div>
+          {todayService && (
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
+              Planning
+            </p>
+          )}
+          <motion.div
+            className="flex flex-col gap-3"
+            variants={listVariants}
+            initial="hidden"
+            animate="show"
+          >
+            {otherServices.map(service => (
+              <motion.div key={service.id} variants={listItemVariants}>
+                <ServiceCard
+                  service={service}
+                  isManager={!!isManager}
+                  onDelete={isManager ? (id) => {
+                    if (window.confirm('Supprimer ce service ? Cette action est irréversible.')) {
+                      deleteService(id)
+                    }
+                  } : undefined}
+                  onAddNote={isManager ? (id, note) => addNote({ serviceId: id, note }) : undefined}
+                />
+              </motion.div>
+            ))}
           </motion.div>
-        ))}
-      </motion.div>
+        </div>
+      )}
 
       {/* Modal création */}
       {isManager && (

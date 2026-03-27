@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
+import { findTodayService } from '@/lib/serviceUtils'
 import type { ServicePageData } from '@/types/service'
 import type { Service, ServiceListItem } from '@/types/index'
 
@@ -84,6 +85,13 @@ export function useServicesList() {
       api.get('/services/list', { params: { centreId } }).then(r => r.data),
     enabled: !!centreId,
   })
+}
+
+// ─── Service du jour (depuis la liste) ───────────────────────────────────────
+
+export function useTodayService(): ServiceListItem | undefined {
+  const { data: services = [] } = useServicesList()
+  return findTodayService(services)
 }
 
 // ─── Créer un service ─────────────────────────────────────────────────────────

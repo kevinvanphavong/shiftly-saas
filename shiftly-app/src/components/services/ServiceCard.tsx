@@ -2,12 +2,13 @@
 
 import { useState, useRef }        from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format, parseISO, isToday, isPast } from 'date-fns'
-import { fr }                      from 'date-fns/locale'
-import { expandVariants }          from '@/lib/animations'
-import { cn }                      from '@/lib/cn'
-import { useDeletePoste }          from '@/hooks/useService'
-import type { ServiceListItem }    from '@/types/index'
+import { format, parseISO } from 'date-fns'
+import { fr }               from 'date-fns/locale'
+import { expandVariants }   from '@/lib/animations'
+import { cn }               from '@/lib/cn'
+import { getEffectiveToday } from '@/lib/serviceUtils'
+import { useDeletePoste }   from '@/hooks/useService'
+import type { ServiceListItem } from '@/types/index'
 import ModalAssignerPoste          from '@/components/services/ModalAssignerPoste'
 
 // ─── Badge statut dynamique ───────────────────────────────────────────────────
@@ -15,11 +16,9 @@ import ModalAssignerPoste          from '@/components/services/ModalAssignerPost
 type BadgeType = 'termine' | 'en_cours' | 'planifie'
 
 function resolveBadge(service: ServiceListItem): BadgeType {
-  const dateObj = parseISO(service.date)
-  if (service.statut === 'TERMINE')  return 'termine'
-  if (service.statut === 'EN_COURS') return 'en_cours'
-  if (isToday(dateObj))              return 'en_cours'
-  if (isPast(dateObj))               return 'termine'
+  const today = getEffectiveToday()
+  if (service.date === today) return 'en_cours'
+  if (service.date < today)   return 'termine'
   return 'planifie'
 }
 
@@ -59,7 +58,7 @@ export default function ServiceCard({ service, isManager, onDelete, onAddNote }:
   const { mutate: deletePoste } = useDeletePoste()
 
   const badge     = resolveBadge(service)
-  const canEdit   = isManager && service.statut === 'PLANIFIE'
+  const canEdit   = isManager && badge === 'planifie'
   const canDelete = canEdit
 
   const dateLabel = (() => {
@@ -200,12 +199,6 @@ export default function ServiceCard({ service, isManager, onDelete, onAddNote }:
                               {zone.nom}
                             </span>
                           </div>
-                          <button
-                            onClick={() => openModalForZone(zone.id)}
-                            className="text-[11px] text-accent hover:opacity-80 transition-opacity"
-                          >
-                            + Ajouter staff
-                          </button>
                         </div>
 
                         {/* Badges staff assignés */}
@@ -244,7 +237,7 @@ export default function ServiceCard({ service, isManager, onDelete, onAddNote }:
                       className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[12px] border border-dashed border-border text-[12px] text-muted hover:text-text hover:border-accent/40 transition-all"
                     >
                       <span className="text-[16px] leading-none">+</span>
-                      Ajouter une zone
+                      Assigner un staff à une zone
                     </button>
                   </div>
                 )}
