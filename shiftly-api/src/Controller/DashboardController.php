@@ -148,6 +148,7 @@ class DashboardController extends AbstractController
         return array_map(fn(User $u) => [
             'id'          => $u->getId(),
             'nom'         => $u->getNom(),
+            'prenom'      => $u->getPrenom(),
             'role'        => $u->getRole(),
             'avatarColor' => $u->getAvatarColor(),
             'points'      => $u->getPoints(),
@@ -173,19 +174,35 @@ class DashboardController extends AbstractController
             'haute'   => $sevMap[Incident::SEV_HAUTE]   ?? 0,
             'moyenne' => $sevMap[Incident::SEV_MOYENNE]  ?? 0,
             'basse'   => $sevMap[Incident::SEV_BASSE]    ?? 0,
-            'alertes' => array_map(fn(Incident $i) => [
-                'id'        => $i->getId(),
-                'titre'     => $i->getTitre(),
-                'severite'  => $i->getSeverite(),
-                'statut'    => $i->getStatut(),
-                'service'   => $i->getService()?->getId(),
-                'zone'      => $i->getZone() ? [
-                    'id'      => $i->getZone()->getId(),
-                    'nom'     => $i->getZone()->getNom(),
-                    'couleur' => $i->getZone()->getCouleur(),
-                ] : null,
-                'createdAt' => $i->getCreatedAt()?->format(\DateTimeInterface::ATOM),
-            ], $open),
+            'alertes' => array_map(function (Incident $i) {
+                $creePar = $i->getUser();
+                $zone    = $i->getZone();
+                return [
+                    'id'        => $i->getId(),
+                    'titre'     => $i->getTitre(),
+                    'severite'  => $i->getSeverite(),
+                    'statut'    => $i->getStatut(),
+                    'service'   => $i->getService()?->getId(),
+                    'zone'      => $zone ? [
+                        'id'      => $zone->getId(),
+                        'nom'     => $zone->getNom(),
+                        'couleur' => $zone->getCouleur(),
+                    ] : null,
+                    'createdAt' => $i->getCreatedAt()?->format(\DateTimeInterface::ATOM),
+                    'creePar'   => $creePar ? [
+                        'id'          => $creePar->getId(),
+                        'nom'         => $creePar->getNom(),
+                        'prenom'      => $creePar->getPrenom(),
+                        'avatarColor' => $creePar->getAvatarColor() ?? '#6b7280',
+                    ] : null,
+                    'staffImpliques' => array_map(fn(User $u) => [
+                        'id'          => $u->getId(),
+                        'nom'         => $u->getNom(),
+                        'prenom'      => $u->getPrenom(),
+                        'avatarColor' => $u->getAvatarColor() ?? '#6b7280',
+                    ], $i->getStaffImpliques()->toArray()),
+                ];
+            }, $open),
         ];
     }
 
@@ -197,6 +214,7 @@ class DashboardController extends AbstractController
         return array_map(fn(User $u) => [
             'id'          => $u->getId(),
             'nom'         => $u->getNom(),
+            'prenom'      => $u->getPrenom(),
             'role'        => $u->getRole(),
             'avatarColor' => $u->getAvatarColor(),
             'points'      => $u->getPoints(),

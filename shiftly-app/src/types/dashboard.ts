@@ -21,6 +21,7 @@ export interface DashboardService {
 export interface DashboardStaffMember {
   id:          number
   nom:         string
+  prenom:      string | null
   role:        'MANAGER' | 'EMPLOYE'
   avatarColor: string | null
   points:      number
@@ -32,14 +33,23 @@ export interface DashboardZone {
   couleur: string
 }
 
+export interface DashboardAlerteStaff {
+  id:          number
+  nom:         string
+  prenom:      string | null
+  avatarColor: string
+}
+
 export interface DashboardAlerte {
-  id:        number
-  titre:     string
-  severite:  'haute' | 'moyenne' | 'basse'
-  statut:    string
-  service:   number | null
-  zone:      DashboardZone | null  // zone rattachée à l'incident
-  createdAt: string                // ISO 8601
+  id:              number
+  titre:           string
+  severite:        'haute' | 'moyenne' | 'basse'
+  statut:          string
+  service:         number | null
+  zone:            DashboardZone | null
+  createdAt:       string
+  creePar:         DashboardAlerteStaff | null
+  staffImpliques:  DashboardAlerteStaff[]
 }
 
 export interface DashboardIncidents {
@@ -53,6 +63,7 @@ export interface DashboardIncidents {
 export interface DashboardTopStaff {
   id:          number
   nom:         string
+  prenom:      string | null
   role:        'MANAGER' | 'EMPLOYE'
   avatarColor: string | null
   points:      number

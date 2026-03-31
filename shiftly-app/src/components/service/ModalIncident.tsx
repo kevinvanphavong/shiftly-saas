@@ -5,6 +5,7 @@ import { motion, AnimatePresence }      from 'framer-motion'
 import { cn }                           from '@/lib/cn'
 import { hexAlpha }                     from '@/lib/colors'
 import { sheetVariants, backdropVariants } from '@/lib/animations'
+import { getInitials, getDisplayName }  from '@/lib/userDisplay'
 import type { ServiceStaffMember, ServiceZone, IncidentSeverite } from '@/types/service'
 
 interface ModalIncidentProps {
@@ -109,7 +110,7 @@ export default function ModalIncident({
           {/* ── Bottom Sheet ── */}
           <motion.div
             key="sheet"
-            className="fixed bottom-0 inset-x-0 z-50 bg-surface rounded-t-[24px] shadow-2xl max-h-[92dvh] flex flex-col"
+            className="fixed bottom-16 lg:bottom-0 inset-x-0 z-[60] bg-surface rounded-t-[24px] shadow-2xl max-h-[92dvh] flex flex-col"
             variants={sheetVariants}
             initial="closed"
             animate="open"
@@ -233,7 +234,7 @@ export default function ModalIncident({
               <div className="flex flex-col gap-1.5">
                 {staff.map(member => {
                   const checked  = staffIds.includes(member.id)
-                  const initials = member.nom.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+                  const initials = getInitials(member.nom, member.prenom)
                   return (
                     <button
                       key={member.id}
@@ -253,7 +254,7 @@ export default function ModalIncident({
                         {initials}
                       </div>
                       <span className="flex-1 text-[13px] text-text font-medium">
-                        {member.nom}
+                        {getDisplayName(member.nom, member.prenom)}
                       </span>
                       {/* Checkbox */}
                       <div

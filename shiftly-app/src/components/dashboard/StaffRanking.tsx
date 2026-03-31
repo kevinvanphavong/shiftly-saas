@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Panel from '@/components/ui/Panel'
 import { ty } from '@/lib/typography'
+import { getInitials, getDisplayName } from '@/lib/userDisplay'
 import type { DashboardTopStaff } from '@/types/dashboard'
 
 interface StaffRankingProps {
@@ -54,12 +55,7 @@ export default function StaffRanking({ topStaff }: StaffRankingProps) {
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map((member, idx) => {
-            const initials = member.nom
-              .split(' ')
-              .map(w => w[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2)
+            const initials = getInitials(member.nom, member.prenom)
 
             const pct = Math.round((member.points / max) * 100)
 
@@ -90,7 +86,7 @@ export default function StaffRanking({ topStaff }: StaffRankingProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className={`${ty.body} font-medium truncate`}>
-                      {member.nom}
+                      {getDisplayName(member.nom, member.prenom)}
                     </span>
                     <span className={`${ty.statSyne} ml-2 flex-shrink-0`}>
                       {member.points} pts

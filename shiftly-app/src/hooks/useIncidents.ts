@@ -4,8 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import type { Incident } from '@/types/index'
+import type { IncidentFull } from '@/types/incident'
 
-// ─── Liste des incidents ──────────────────────────────────────────────────────
+// ─── Liste des incidents (API Platform) ──────────────────────────────────────
 
 export function useIncidents(serviceId?: number) {
   const centreId = useAuthStore(s => s.centreId)
@@ -15,6 +16,19 @@ export function useIncidents(serviceId?: number) {
     queryFn:  () =>
       api.get('/incidents', { params: { centreId, serviceId } })
         .then(r => r.data['hydra:member'] ?? r.data.member ?? r.data),
+    enabled: !!centreId,
+  })
+}
+
+// ─── Liste complète des incidents (pour la page réglages manager) ─────────────
+
+export function useIncidentsFull() {
+  const centreId = useAuthStore(s => s.centreId)
+
+  return useQuery<IncidentFull[]>({
+    queryKey: ['incidents', 'list', centreId],
+    queryFn:  () =>
+      api.get('/incidents/list', { params: { centreId } }).then(r => r.data),
     enabled: !!centreId,
   })
 }
@@ -31,13 +45,11 @@ interface CreateIncidentPayload {
 }
 
 export function useCreateIncident() {
-  const userId      = useAuthStore(s => s.userId)
   const centreId    = useAuthStore(s => s.centreId)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ titre, severite, serviceId, centreId: cid, zoneId, staffIds }: CreateIncidentPayload) =>
-      // Endpoint custom — évite les problèmes de résolution IRI d'API Platform
       api.post('/incidents/create', {
         titre,
         severite,
@@ -50,12 +62,13 @@ export function useCreateIncident() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['incidents', centreId, variables.serviceId] })
       queryClient.invalidateQueries({ queryKey: ['incidents', centreId, undefined] })
+      queryClient.invalidateQueries({ queryKey: ['incidents', 'list', centreId] })
       queryClient.invalidateQueries({ queryKey: ['dashboard', centreId] })
     },
   })
 }
 
-// ─── Modifier un incident ─────────────────────────────────────────────────────
+// ─── Modifier un incident (statut/sévérité simple) ────────────────────────────
 
 interface UpdateIncidentPayload {
   id:        number
@@ -73,6 +86,34 @@ export function useUpdateIncident() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incidents', centreId] })
+      queryClient.invalidateQueries({ queryKey: ['incidents', 'list', centreId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', centreId] })
+    },
+  })
+}
+
+// ─── Modifier un incident complet (titre, zone, staffIds, statut) ─────────────
+
+interface UpdateIncidentFullPayload {
+  id:        number
+  titre?:    string
+  severite?: 'haute' | 'moyenne' | 'basse'
+  statut?:   'OUVERT' | 'EN_COURS' | 'RESOLU'
+  zoneId?:   number | null
+  staffIds?: number[]
+}
+
+export function useUpdateIncidentFull() {
+  const centreId    = useAuthStore(s => s.centreId)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, ...payload }: UpdateIncidentFullPayload) =>
+      api.patch(`/incidents/${id}/update`, payload).then(r => r.data),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents', centreId] })
+      queryClient.invalidateQueries({ queryKey: ['incidents', 'list', centreId] })
       queryClient.invalidateQueries({ queryKey: ['dashboard', centreId] })
     },
   })

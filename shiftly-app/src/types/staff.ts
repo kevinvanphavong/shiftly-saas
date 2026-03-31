@@ -20,6 +20,7 @@ export interface StaffMember {
   role:             StaffRole
   points:           number
   actif:            boolean
+  avatarColor:      string
   tailleHaut:       string | null
   tailleBas:        string | null
   pointure:         string | null

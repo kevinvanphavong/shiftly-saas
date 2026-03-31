@@ -24,6 +24,16 @@ class IncidentRepository extends ServiceEntityRepository
             ->getQuery()->getResult();
     }
 
+    /** Tous les incidents du centre, triés par date décroissante */
+    public function findAllByCentre(int $centreId): array
+    {
+        return $this->createQueryBuilder('i')
+            ->andWhere('i.centre = :centreId')
+            ->setParameter('centreId', $centreId)
+            ->orderBy('i.createdAt', 'DESC')
+            ->getQuery()->getResult();
+    }
+
     public function countBySeverite(int $centreId): array
     {
         return $this->createQueryBuilder('i')

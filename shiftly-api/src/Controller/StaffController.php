@@ -88,6 +88,7 @@ class StaffController extends AbstractController
                 'role'             => $user->getRole(),
                 'points'           => $user->getPoints(),
                 'actif'            => $user->isActif(),
+                'avatarColor'      => $user->getAvatarColor() ?? '#6b7280',
                 'tailleHaut'       => $user->getTailleHaut(),
                 'tailleBas'        => $user->getTailleBas(),
                 'pointure'         => $user->getPointure(),

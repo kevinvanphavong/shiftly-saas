@@ -16,6 +16,7 @@ export interface ServiceZone {
 export interface ServiceStaffMember {
   id:          number
   nom:         string
+  prenom:      string | null
   role:        'MANAGER' | 'EMPLOYE'
   avatarColor: string
 }
@@ -36,7 +37,7 @@ export interface ServiceMission {
   /** completionId si cochée, null sinon */
   completionId: number | null
   /** Qui a coché cette mission (null si pas encore cochée) */
-  completedBy:  Pick<ServiceStaffMember, 'id' | 'nom' | 'avatarColor'> | null
+  completedBy:  Pick<ServiceStaffMember, 'id' | 'nom' | 'prenom' | 'avatarColor'> | null
 }
 
 /** Zone avec ses postes (staff) et ses missions dédupliquées */

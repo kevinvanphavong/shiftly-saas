@@ -69,6 +69,7 @@ class ServicesListController extends AbstractController
                     $staffList[] = [
                         'id'          => $user->getId(),
                         'nom'         => $user->getNom(),
+                        'prenom'      => $user->getPrenom(),
                         'avatarColor' => $user->getAvatarColor() ?? '#6b7280',
                     ];
                 }
@@ -106,6 +107,7 @@ class ServicesListController extends AbstractController
                     'posteId'     => $p->getId(),
                     'userId'      => $p->getUser()?->getId(),
                     'nom'         => $p->getUser()?->getNom() ?? '',
+                    'prenom'      => $p->getUser()?->getPrenom(),
                     'avatarColor' => $p->getUser()?->getAvatarColor() ?? '#6b7280',
                 ], $postes);
 

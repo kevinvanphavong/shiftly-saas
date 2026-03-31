@@ -2,25 +2,28 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Topbar          from '@/components/layout/Topbar'
-import HeroService     from '@/components/dashboard/HeroService'
-import KPIGrid         from '@/components/dashboard/KPIGrid'
-import IncidentsList   from '@/components/dashboard/IncidentsList'
-import StaffRanking    from '@/components/dashboard/StaffRanking'
-import Panel           from '@/components/ui/Panel'
-import ModalIncident   from '@/components/service/ModalIncident'
-import { useDashboard }    from '@/hooks/useDashboard'
-import { useServiceToday } from '@/hooks/useService'
-import { useCreateIncident } from '@/hooks/useIncidents'
-import { useZones }        from '@/hooks/useZones'
-import { useAuthStore }    from '@/store/authStore'
-import { useCurrentUser }  from '@/hooks/useCurrentUser'
+import Topbar                from '@/components/layout/Topbar'
+import HeroService           from '@/components/dashboard/HeroService'
+import KPIGrid               from '@/components/dashboard/KPIGrid'
+import IncidentsList         from '@/components/dashboard/IncidentsList'
+import StaffRanking          from '@/components/dashboard/StaffRanking'
+import ModalIncident         from '@/components/service/ModalIncident'
+import ModalIncidentDetail   from '@/components/dashboard/ModalIncidentDetail'
+import ModalIncidentEdit     from '@/components/dashboard/ModalIncidentEdit'
+import Panel                 from '@/components/ui/Panel'
+import { useDashboard }          from '@/hooks/useDashboard'
+import { useServiceToday }       from '@/hooks/useService'
+import { useCreateIncident }     from '@/hooks/useIncidents'
+import { useUpdateIncidentFull } from '@/hooks/useIncidents'
+import { useZones }              from '@/hooks/useZones'
+import { useAuthStore }          from '@/store/authStore'
+import { useCurrentUser }        from '@/hooks/useCurrentUser'
+import type { DashboardAlerte }  from '@/types/dashboard'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { user, loading } = useCurrentUser()
 
-  // Redirige les EMPLOYE vers /service — dashboard réservé aux managers
   useEffect(() => {
     if (!loading && user && user.role !== 'MANAGER') {
       router.replace('/service')
@@ -32,10 +35,14 @@ export default function DashboardPage() {
   const { data: zonesData = [] }     = useZones()
   const centreId                     = useAuthStore(s => s.centreId)
   const createIncident               = useCreateIncident()
+  const updateIncident               = useUpdateIncidentFull()
 
-  const [incidentOpen, setIncidentOpen] = useState(false)
+  // ── État modales ──────────────────────────────────────────────────────────
+  const [incidentOpen,       setIncidentOpen]       = useState(false)
+  const [selectedIncident,   setSelectedIncident]   = useState<DashboardAlerte | null>(null)
+  const [detailOpen,         setDetailOpen]         = useState(false)
+  const [editOpen,           setEditOpen]           = useState(false)
 
-  // Toutes les zones actives du centre (pour la modale incident)
   const allZones = useMemo(
     () => zonesData
       .filter(z => !z.archivee)
@@ -43,11 +50,14 @@ export default function DashboardPage() {
     [zonesData]
   )
 
+  // Staff du service du jour pour les modales incident
+  const serviceStaff = useMemo(
+    () => (serviceData?.staff ?? []).map(m => ({ id: m.id, nom: m.nom, avatarColor: m.avatarColor })),
+    [serviceData]
+  )
+
   const handleIncidentSubmit = useCallback(async (payload: {
-    titre:    string
-    severite: 'haute' | 'moyenne' | 'basse'
-    zoneId:   number | null
-    staffIds: number[]
+    titre: string; severite: 'haute' | 'moyenne' | 'basse'; zoneId: number | null; staffIds: number[]
   }) => {
     if (!serviceData || !centreId) return
     await createIncident.mutateAsync({
@@ -60,69 +70,97 @@ export default function DashboardPage() {
     })
   }, [serviceData, centreId, createIncident])
 
+  const handleView = useCallback((inc: DashboardAlerte) => {
+    setSelectedIncident(inc)
+    setDetailOpen(true)
+  }, [])
+
+  const handleEdit = useCallback((inc: DashboardAlerte) => {
+    setSelectedIncident(inc)
+    setEditOpen(true)
+  }, [])
+
+  const handleClose = useCallback((id: number) => {
+    updateIncident.mutate({ id, statut: 'RESOLU' })
+  }, [updateIncident])
+
+  const handleEditSubmit = useCallback(async (payload: {
+    titre: string; severite: 'haute' | 'moyenne' | 'basse'
+    statut: 'OUVERT' | 'EN_COURS' | 'RESOLU'; zoneId: number | null; staffIds: number[]
+  }) => {
+    if (!selectedIncident) return
+    await updateIncident.mutateAsync({ id: selectedIncident.id, ...payload })
+  }, [selectedIncident, updateIncident])
+
   if (loading || !user || user.role !== 'MANAGER') return null
 
+  // Les modales sont rendues HORS du div animate-fadeUp :
+  // transform: translateY(0) crée un nouveau containing block qui brise position:fixed
   return (
-    <div className="min-h-full animate-fadeUp">
-      <Topbar />
+    <>
+      <div className="min-h-full animate-fadeUp">
+        <Topbar />
 
-      <div className="px-5 pb-8 lg:px-7 space-y-4">
+        <div className="px-5 pb-8 lg:px-7 space-y-4">
 
-        {/* ── États loading / erreur ── */}
-        {isLoading && (
-          <div className="space-y-4 animate-pulse">
-            <div className="h-[130px] bg-surface rounded-[18px] border border-border" />
-            <div className="grid grid-cols-2 gap-3">
-              {[0,1,2,3].map(i => (
-                <div key={i} className="h-20 bg-surface rounded-[14px] border border-border" />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {isError && (
-          <p className="text-red text-[13px] px-1">Impossible de charger le dashboard.</p>
-        )}
-
-        {/* ── Données réelles ── */}
-        {data && (
-          <>
-            <HeroService
-              data={data.service}
-              onReportIncident={serviceData?.service ? () => setIncidentOpen(true) : undefined}
-            />
-
-            <KPIGrid
-              data={{
-                service:   data.service,
-                staff:     data.staff,
-                incidents: data.incidents,
-                tutoriels: data.tutoriels,
-                stats:     data.stats,
-              }}
-            />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <IncidentsList data={data.incidents} />
-              <StaffRanking  topStaff={data.topStaff} />
-            </div>
-
-            {/* Placeholder section Notifications — à implémenter */}
-            <Panel title="Notifications">
-              <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-                <span className="text-3xl">🔔</span>
-                <p className="text-[13px] font-semibold text-text">Bientôt disponible</p>
-                <p className="text-[12px] text-muted max-w-[240px]">
-                  Le centre de notifications arrivera prochainement.
-                </p>
+          {isLoading && (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-[130px] bg-surface rounded-[18px] border border-border" />
+              <div className="grid grid-cols-2 gap-3">
+                {[0,1,2,3].map(i => (
+                  <div key={i} className="h-20 bg-surface rounded-[14px] border border-border" />
+                ))}
               </div>
-            </Panel>
-          </>
-        )}
+            </div>
+          )}
 
+          {isError && (
+            <p className="text-red text-[13px] px-1">Impossible de charger le dashboard.</p>
+          )}
+
+          {data && (
+            <>
+              <HeroService
+                data={data.service}
+                onReportIncident={serviceData?.service ? () => setIncidentOpen(true) : undefined}
+              />
+
+              <KPIGrid
+                data={{
+                  service:   data.service,
+                  staff:     data.staff,
+                  incidents: data.incidents,
+                  tutoriels: data.tutoriels,
+                  stats:     data.stats,
+                }}
+              />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <IncidentsList
+                  data={data.incidents}
+                  userRole="MANAGER"
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onClose={handleClose}
+                />
+                <StaffRanking topStaff={data.topStaff} />
+              </div>
+
+              <Panel title="Notifications">
+                <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+                  <span className="text-3xl">🔔</span>
+                  <p className="text-[13px] font-semibold text-text">Bientôt disponible</p>
+                  <p className="text-[12px] text-muted max-w-[240px]">
+                    Le centre de notifications arrivera prochainement.
+                  </p>
+                </div>
+              </Panel>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Modale incident */}
+      {/* Modales — hors du div animé pour que position:fixed fonctionne */}
       <ModalIncident
         open={incidentOpen}
         onClose={() => setIncidentOpen(false)}
@@ -130,6 +168,22 @@ export default function DashboardPage() {
         zones={allZones}
         staff={serviceData?.staff ?? []}
       />
-    </div>
+
+      <ModalIncidentDetail
+        open={detailOpen}
+        incident={selectedIncident}
+        onClose={() => setDetailOpen(false)}
+        onEdit={() => { setDetailOpen(false); setEditOpen(true) }}
+      />
+
+      <ModalIncidentEdit
+        open={editOpen}
+        incident={selectedIncident}
+        zones={allZones}
+        staff={serviceStaff}
+        onClose={() => setEditOpen(false)}
+        onSubmit={handleEditSubmit}
+      />
+    </>
   )
 }

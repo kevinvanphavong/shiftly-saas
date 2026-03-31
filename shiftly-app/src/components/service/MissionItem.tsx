@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/cn'
+import { getInitials } from '@/lib/userDisplay'
 import type { ServiceMission } from '@/types/service'
 
 interface MissionItemProps {
@@ -32,7 +33,7 @@ export default function MissionItem({
   const cat   = CATEGORIE_BADGE[mission.categorie]
   const prio  = PRIORITE_CONFIG[mission.priorite] ?? PRIORITE_CONFIG['ne_pas_oublier']
   const initials = mission.completedBy
-    ? mission.completedBy.nom.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    ? getInitials(mission.completedBy.nom, mission.completedBy.prenom)
     : null
 
   return (

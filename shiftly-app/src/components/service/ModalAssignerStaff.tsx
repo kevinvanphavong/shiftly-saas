@@ -5,6 +5,7 @@ import { motion, AnimatePresence }            from 'framer-motion'
 import { cn }                                 from '@/lib/cn'
 import { sheetVariants, backdropVariants }    from '@/lib/animations'
 import { useCreatePoste }                     from '@/hooks/useService'
+import { getInitials, getDisplayName }        from '@/lib/userDisplay'
 import type { ServiceZone, ServiceStaffMember } from '@/types/service'
 
 interface Props {
@@ -68,7 +69,7 @@ export default function ModalAssignerStaff({
 
           <motion.div
             key="sheet"
-            className="fixed bottom-0 inset-x-0 z-50 bg-surface rounded-t-[24px] shadow-2xl max-h-[80dvh] flex flex-col"
+            className="fixed bottom-16 lg:bottom-0 inset-x-0 z-[60] bg-surface rounded-t-[24px] shadow-2xl max-h-[80dvh] flex flex-col"
             variants={sheetVariants}
             initial="closed"
             animate="open"
@@ -114,7 +115,7 @@ export default function ModalAssignerStaff({
               {staff.map(member => {
                 const alreadyAssigned = assignedUserIds.includes(member.id)
                 const isSelected      = selectedId === member.id
-                const initials        = member.nom.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+                const initials        = getInitials(member.nom, member.prenom)
 
                 return (
                   <button
@@ -144,7 +145,7 @@ export default function ModalAssignerStaff({
                         'text-[13px] font-semibold truncate',
                         alreadyAssigned ? 'text-muted' : 'text-text'
                       )}>
-                        {member.nom}
+                        {getDisplayName(member.nom, member.prenom)}
                       </p>
                       <p className="text-[11px] text-muted">
                         {alreadyAssigned ? 'Déjà assigné à cette zone' : member.role === 'MANAGER' ? 'Manager' : 'Employé'}

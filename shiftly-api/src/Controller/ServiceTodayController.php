@@ -121,6 +121,7 @@ class ServiceTodayController extends AbstractController
                     'user' => $user ? [
                         'id'          => $user->getId(),
                         'nom'         => $user->getNom(),
+                        'prenom'      => $user->getPrenom(),
                         'role'        => $user->getRole(),
                         'avatarColor' => $user->getAvatarColor() ?? '#6b7280',
                     ] : null,
@@ -143,6 +144,7 @@ class ServiceTodayController extends AbstractController
                     'completedBy'  => $completedBy ? [
                         'id'          => $completedBy->getId(),
                         'nom'         => $completedBy->getNom(),
+                        'prenom'      => $completedBy->getPrenom(),
                         'avatarColor' => $completedBy->getAvatarColor() ?? '#6b7280',
                     ] : null,
                 ];
@@ -162,6 +164,7 @@ class ServiceTodayController extends AbstractController
         $staffList = array_map(fn(User $u) => [
             'id'          => $u->getId(),
             'nom'         => $u->getNom(),
+            'prenom'      => $u->getPrenom(),
             'role'        => $u->getRole(),
             'avatarColor' => $u->getAvatarColor() ?? '#6b7280',
         ], $this->userRepo->findByCentre($centreId));

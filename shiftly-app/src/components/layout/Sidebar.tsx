@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/cn'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useDesktopNavItems } from '@/hooks/useNavItems'
+import { ty } from '@/lib/typography'
 
 function getInitials(nom: string): string {
   return nom
@@ -57,7 +58,7 @@ export default function Sidebar() {
             )}
           >
             <span className="text-[15px]">{item.icon}</span>
-            <span className="flex-1 leading-none">{item.label}</span>
+            <span className={`${ty.sectionLabel} flex-1 leading-none`}>{item.label}</span>
           </Link>
         ))}
       </nav>

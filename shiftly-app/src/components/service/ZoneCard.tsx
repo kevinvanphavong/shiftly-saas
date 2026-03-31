@@ -2,6 +2,7 @@
 
 import { cn }         from '@/lib/cn'
 import MissionItem    from './MissionItem'
+import { getInitials, getDisplayName } from '@/lib/userDisplay'
 import type { ServiceZoneData, ServiceZone } from '@/types/service'
 
 interface ZoneCardProps {
@@ -76,7 +77,7 @@ export default function ZoneCard({
         {zone.postes.map(poste => {
           if (!poste.user) return null
           const { user } = poste
-          const initials = user.nom.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+          const initials = getInitials(user.nom, user.prenom)
 
           return (
             <div
@@ -97,7 +98,7 @@ export default function ZoneCard({
                 className="text-[11px] font-semibold"
                 style={{ color: user.avatarColor }}
               >
-                {user.nom}
+                {getDisplayName(user.nom, user.prenom)}
               </span>
               {/* Bouton retirer — visible au hover ou tap (MANAGER seulement) */}
               {onRemoveStaff && (
