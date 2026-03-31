@@ -10,8 +10,11 @@ export interface AuthUser {
   avatarColor: string | null
   points:      number
   centre: {
-    id:  number
-    nom: string
+    id:        number
+    nom:       string
+    adresse:   string | null
+    telephone: string | null
+    siteWeb:   string | null
   } | null
 }
 

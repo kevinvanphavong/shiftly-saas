@@ -27,8 +27,11 @@ class MeController extends AbstractController
             'avatarColor' => $user->getAvatarColor(),
             'points'      => $user->getPoints(),
             'centre'      => $centre ? [
-                'id'  => $centre->getId(),
-                'nom' => $centre->getNom(),
+                'id'        => $centre->getId(),
+                'nom'       => $centre->getNom(),
+                'adresse'   => $centre->getAdresse(),
+                'telephone' => $centre->getTelephone(),
+                'siteWeb'   => $centre->getSiteWeb(),
             ] : null,
         ]);
     }

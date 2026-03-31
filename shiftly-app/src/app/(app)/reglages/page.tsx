@@ -3,6 +3,7 @@ import { ty }                from '@/lib/typography'
 import LogoutButton          from '@/components/auth/LogoutButton'
 import ProfileCard           from '@/components/settings/ProfileCard'
 import CentreSettingsSection from '@/components/settings/HorairesSummary'
+import CentreInfoSection     from '@/components/settings/CentreInfoSection'
 import ManagerLinks          from '@/components/settings/ManagerLinks'
 
 export const metadata: Metadata = { title: 'Réglages — Shiftly' }
@@ -50,6 +51,9 @@ export default function ReglagesPage() {
 
       {/* Centre — section dynamique (horaires calculés depuis la BDD) */}
       <CentreSettingsSection />
+
+      {/* Informations du centre (nom, adresse, téléphone, site web) */}
+      <CentreInfoSection />
 
       {/* Danger zone */}
       <div>
