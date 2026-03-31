@@ -12,6 +12,7 @@ use App\Repository\ServiceRepository;
 use App\Repository\TutorielRepository;
 use App\Repository\TutoReadRepository;
 use App\Repository\UserRepository;
+use App\Service\ServiceStatutResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,14 +23,15 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class DashboardController extends AbstractController
 {
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly ServiceRepository      $serviceRepo,
-        private readonly UserRepository         $userRepo,
-        private readonly IncidentRepository     $incidentRepo,
-        private readonly TutorielRepository     $tutorielRepo,
-        private readonly TutoReadRepository     $tutoReadRepo,
-        private readonly CompletionRepository   $completionRepo,
-        private readonly MissionRepository      $missionRepo,
+        private readonly EntityManagerInterface  $em,
+        private readonly ServiceRepository       $serviceRepo,
+        private readonly UserRepository          $userRepo,
+        private readonly IncidentRepository      $incidentRepo,
+        private readonly TutorielRepository      $tutorielRepo,
+        private readonly TutoReadRepository      $tutoReadRepo,
+        private readonly CompletionRepository    $completionRepo,
+        private readonly MissionRepository       $missionRepo,
+        private readonly ServiceStatutResolver   $statutResolver,
     ) {}
 
     /**
@@ -37,7 +39,7 @@ class DashboardController extends AbstractController
      *
      * Retourne en une seule requête toutes les données du dashboard :
      *  - service du jour (statut, postes, taux completion corrigé)
-     *  - staff actif (postes assignés au service du jour)
+     *  - staff actif (users avec actif = true dans le centre)
      *  - incidents ouverts (tous, avec zone rattachée)
      *  - top staff (classement par points, avec rôle)
      *  - taux tutoriels (lectures / total par centre)
@@ -129,11 +131,11 @@ class DashboardController extends AbstractController
                 'date'       => $service->getDate()?->format('Y-m-d'),
                 'heureDebut' => $service->getHeureDebut()?->format('H:i'),
                 'heureFin'   => $service->getHeureFin()?->format('H:i'),
-                'statut'     => $service->getStatut(),
+                'statut'     => $this->statutResolver->resolve($service),
                 'nbPostes'   => $service->getPostes()->count(),
             ],
             'tauxCompletion'   => $taux,
-            'staffActifCount'  => count($staffSeen),
+            'staffActifCount'  => $this->userRepo->countActifByCentre($centreId),
             'totalMissions'    => $totalMissions,
             'pointsStaffActif' => $pointsTotal,
         ];

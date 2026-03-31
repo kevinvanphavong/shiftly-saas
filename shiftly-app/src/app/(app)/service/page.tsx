@@ -175,44 +175,49 @@ export default function ServicePage() {
   }
 
   // ── Rendu principal ────────────────────────────────────────────────────────
+  // Les modales sont rendues HORS du div animate-fadeUp :
+  // transform: translateY(0) (fill-mode forwards) crée un nouveau containing block
+  // ce qui brise position:fixed des bottom sheets.
   return (
-    <div className="min-h-full animate-fadeUp">
-      <Topbar />
+    <>
+      <div className="min-h-full animate-fadeUp">
+        <Topbar />
 
-      <div className="px-4 pb-28 lg:px-7 lg:pb-12 space-y-3 lg:mx-auto">
+        <div className="px-4 pb-28 lg:px-7 lg:pb-12 space-y-3 lg:mx-auto">
 
-        {/* Hero service */}
-        <HeroServiceCard
-          service={data.service}
-          globalPct={globalPct}
-          zonePcts={zonePcts}
-          onReportIncident={() => setIncidentOpen(true)}
-        />
-
-        {/* Progression par zone */}
-        <ProgressionGlobale
-          stats={zoneStats}
-          totalDone={totalDone}
-          totalAll={totalAll}
-        />
-
-        {/* Zone cards */}
-        {data.zones.map(zone => (
-          <ZoneCard
-            key={zone.id}
-            zone={zone}
-            completions={completions}
-            loadingMissions={loadingMissions}
-            onToggle={handleToggle}
-            onAddPonctuelle={userRole === 'MANAGER' ? z => setPonctuellZone(z as ServiceZoneData) : undefined}
-            onAssign={userRole === 'MANAGER' ? z => setAssignZone(z as ServiceZoneData) : undefined}
-            onRemoveStaff={userRole === 'MANAGER' ? posteId => deletePoste.mutate(posteId) : undefined}
+          {/* Hero service */}
+          <HeroServiceCard
+            service={data.service}
+            globalPct={globalPct}
+            zonePcts={zonePcts}
+            onReportIncident={() => setIncidentOpen(true)}
           />
-        ))}
 
+          {/* Progression par zone */}
+          <ProgressionGlobale
+            stats={zoneStats}
+            totalDone={totalDone}
+            totalAll={totalAll}
+          />
+
+          {/* Zone cards */}
+          {data.zones.map(zone => (
+            <ZoneCard
+              key={zone.id}
+              zone={zone}
+              completions={completions}
+              loadingMissions={loadingMissions}
+              onToggle={handleToggle}
+              onAddPonctuelle={userRole === 'MANAGER' ? z => setPonctuellZone(z as ServiceZoneData) : undefined}
+              onAssign={userRole === 'MANAGER' ? z => setAssignZone(z as ServiceZoneData) : undefined}
+              onRemoveStaff={userRole === 'MANAGER' ? posteId => deletePoste.mutate(posteId) : undefined}
+            />
+          ))}
+
+        </div>
       </div>
 
-      {/* Modale incident */}
+      {/* Modales — en dehors du div animé pour que position:fixed fonctionne */}
       <ModalIncident
         open={incidentOpen}
         onClose={() => setIncidentOpen(false)}
@@ -223,7 +228,6 @@ export default function ServicePage() {
         staff={data.staff}
       />
 
-      {/* Modale mission ponctuelle */}
       {ponctuellZone && (
         <ModalMissionPonctuelle
           open
@@ -233,7 +237,6 @@ export default function ServicePage() {
         />
       )}
 
-      {/* Modale assignation staff */}
       {assignZone && (
         <ModalAssignerStaff
           open
@@ -247,6 +250,6 @@ export default function ServicePage() {
           onClose={() => setAssignZone(null)}
         />
       )}
-    </div>
+    </>
   )
 }

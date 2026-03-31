@@ -35,6 +35,16 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()->getResult();
     }
 
+    public function countActifByCentre(int $centreId): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.centre = :centreId')
+            ->andWhere('u.actif = true')
+            ->setParameter('centreId', $centreId)
+            ->getQuery()->getSingleScalarResult();
+    }
+
     public function findLeaderboard(int $centreId): array
     {
         return $this->createQueryBuilder('u')

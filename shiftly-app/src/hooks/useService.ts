@@ -46,6 +46,7 @@ export function useDeletePoste() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service', 'today', centreId] })
       queryClient.invalidateQueries({ queryKey: ['services', 'list', centreId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', centreId] })
     },
   })
 }
@@ -70,6 +71,7 @@ export function useCreatePoste() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service', 'today', centreId] })
       queryClient.invalidateQueries({ queryKey: ['services', 'list', centreId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', centreId] })
     },
   })
 }

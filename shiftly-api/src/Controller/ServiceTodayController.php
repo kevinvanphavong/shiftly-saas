@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Repository\MissionRepository;
 use App\Repository\ServiceRepository;
 use App\Repository\UserRepository;
+use App\Service\ServiceStatutResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,9 +37,10 @@ class ServiceTodayController extends AbstractController
     ];
 
     public function __construct(
-        private readonly ServiceRepository $serviceRepo,
-        private readonly MissionRepository $missionRepo,
-        private readonly UserRepository    $userRepo,
+        private readonly ServiceRepository    $serviceRepo,
+        private readonly MissionRepository    $missionRepo,
+        private readonly UserRepository       $userRepo,
+        private readonly ServiceStatutResolver $statutResolver,
     ) {}
 
     #[Route('/api/service/today', name: 'api_service_today', methods: ['GET'], format: 'json')]
@@ -170,7 +172,7 @@ class ServiceTodayController extends AbstractController
                 'date'       => $service->getDate()?->format('Y-m-d'),
                 'heureDebut' => $service->getHeureDebut()?->format('H:i') ?? '00:00',
                 'heureFin'   => $service->getHeureFin()?->format('H:i') ?? '00:00',
-                'statut'     => $service->getStatut(),
+                'statut'     => $this->statutResolver->resolve($service),
                 'centreName' => $service->getCentre()?->getNom() ?? '',
             ],
             'zones' => $zonesData,

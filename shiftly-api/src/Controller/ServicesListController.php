@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\MissionRepository;
 use App\Repository\ServiceRepository;
+use App\Service\ServiceStatutResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,8 +26,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ServicesListController extends AbstractController
 {
     public function __construct(
-        private readonly ServiceRepository $serviceRepo,
-        private readonly MissionRepository $missionRepo,
+        private readonly ServiceRepository    $serviceRepo,
+        private readonly MissionRepository    $missionRepo,
+        private readonly ServiceStatutResolver $statutResolver,
     ) {}
 
     #[Route('/api/services/list', name: 'api_services_list', methods: ['GET'], format: 'json', priority: 10)]
@@ -44,7 +46,6 @@ class ServicesListController extends AbstractController
 
         $services = $this->serviceRepo->findByCentreDesc($centreId);
 
-        $today  = new \DateTimeImmutable('today');
         $result = [];
 
         foreach ($services as $service) {
@@ -75,6 +76,8 @@ class ServicesListController extends AbstractController
 
             // ── Progression par zone ──────────────────────────────────────────
             $zonesData = [];
+            $globalTotal = 0;
+            $globalDone  = 0;
 
             foreach ($postesByZone as $zid => $postes) {
                 $zone = $zonesMeta[$zid];
@@ -83,13 +86,20 @@ class ServicesListController extends AbstractController
                 $missions = $this->missionRepo->findForService($zid, $service->getId());
                 $total    = count($missions);
 
-                // Completions agrégées de tous les postes de la zone
-                $completed = 0;
+                // Déduplication des completions par missionId (évite double-comptage
+                // quand plusieurs postes existent pour la même zone)
+                $doneMissionIds = [];
                 foreach ($postes as $poste) {
-                    $completed += $poste->getCompletions()->count();
+                    foreach ($poste->getCompletions() as $completion) {
+                        $doneMissionIds[$completion->getMission()->getId()] = true;
+                    }
                 }
+                $completed = count($doneMissionIds);
 
                 $taux = $total > 0 ? round($completed / $total * 100, 1) : 0.0;
+
+                $globalTotal += $total;
+                $globalDone  += $completed;
 
                 // Détail des postes (staff assigné à cette zone)
                 $postesData = array_map(fn($p) => [
@@ -108,22 +118,15 @@ class ServicesListController extends AbstractController
                 ];
             }
 
+            // Taux de completion global calculé dynamiquement
+            $globalTaux = $globalTotal > 0 ? round($globalDone / $globalTotal * 100, 1) : 0.0;
+
             // Tri des zones par ordre
             usort($zonesData, fn($a, $b) =>
                 ($zonesMeta[$a['id']]->getOrdre() ?? 0) <=> ($zonesMeta[$b['id']]->getOrdre() ?? 0)
             );
 
-            // ── Statut dynamique (priorité à TERMINE explicite, sinon calcul par date) ──
-            $serviceDate = $service->getDate();
-            if ($service->getStatut() === 'TERMINE') {
-                $statut = 'TERMINE';
-            } elseif ($serviceDate !== null && $serviceDate < $today) {
-                $statut = 'TERMINE';
-            } elseif ($serviceDate !== null && $serviceDate->format('Y-m-d') === $today->format('Y-m-d')) {
-                $statut = 'EN_COURS';
-            } else {
-                $statut = 'PLANIFIE';
-            }
+            $statut = $this->statutResolver->resolve($service);
 
             $result[] = [
                 'id'             => $service->getId(),
@@ -131,7 +134,7 @@ class ServicesListController extends AbstractController
                 'heureDebut'     => $service->getHeureDebut()?->format('H:i'),
                 'heureFin'       => $service->getHeureFin()?->format('H:i'),
                 'statut'         => $statut,
-                'tauxCompletion' => $service->getTauxCompletion(),
+                'tauxCompletion' => $globalTaux,
                 'note'           => $service->getNote(),
                 'staff'          => $staffList,
                 'zones'          => $zonesData,
