@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     libzip-dev \
     unzip \
     curl \
-    bash
+    bash \
+    openssl
 
 # Extensions PHP requises en prod
 RUN docker-php-ext-install \
@@ -22,6 +23,9 @@ RUN docker-php-ext-install \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
+
+ENV APP_ENV=prod
+ENV APP_DEBUG=0
 
 # Dépendances Composer (couche cachée séparée)
 COPY composer.json composer.lock symfony.lock* ./
