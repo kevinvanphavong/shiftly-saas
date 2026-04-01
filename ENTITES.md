@@ -404,18 +404,18 @@ CLOTURE   → clôturé (cloturedLe auto-renseigné)
 
 | Nom | Email | Rôle | Heures/sem | Points | Niveau | Vêtements |
 |---|---|---|---|---|---|---|
-| Kévin | kevin@bowlingcentral.fr | MANAGER | 39 | 60 | AVANCE | 2 polo manches longues, 1 sweat |
-| Mégane | megane@bowlingcentral.fr | MANAGER | 39 | 10 | DEBUTANT | — |
-| Micka | micka@bowlingcentral.fr | MANAGER | 39 | 10 | DEBUTANT | — |
-| Erwan | erwan@bowlingcentral.fr | EMPLOYE | 39 | 35 | INTERMEDIAIRE | 2 tshirts, 1 polo manches courtes |
-| Patou | patou@bowlingcentral.fr | EMPLOYE | 35 | 75 | AVANCE | 1 veste sans manche |
-| Pôl | pol@bowlingcentral.fr | EMPLOYE | 35 | 10 | DEBUTANT | 1 polo manches longues (new) |
-| Cynthia | cynthia@bowlingcentral.fr | EMPLOYE | 35 | 10 | DEBUTANT | 2 t-shirts, 2 polaires manches longues |
-| Gabin | gabin@bowlingcentral.fr | EMPLOYE | 25 | 65 | AVANCE | 1 polo manches longues + 2 polos |
-| Aya | aya@bowlingcentral.fr | EMPLOYE | 15 | 50 | INTERMEDIAIRE | — |
-| Agent de sécurité | securite@bowlingcentral.fr | EMPLOYE | 15 | 25 | INTERMEDIAIRE | Badge |
-| Hiba | hiba@bowlingcentral.fr | EMPLOYE | 15 | 10 | DEBUTANT | — |
-| Daniela | daniela@bowlingcentral.fr | EMPLOYE | 15 | 10 | DEBUTANT | — |
+| Kévin | kevin@fgc.fr | MANAGER | 39 | 60 | AVANCE | 2 polo manches longues, 1 sweat |
+| Mégane | megane@fgc.fr | MANAGER | 39 | 10 | DEBUTANT | — |
+| Micka | micka@fgc.fr | MANAGER | 39 | 10 | DEBUTANT | — |
+| Erwan | erwan@fgc.fr | EMPLOYE | 39 | 35 | INTERMEDIAIRE | 2 tshirts, 1 polo manches courtes |
+| Patou | patou@fgc.fr | EMPLOYE | 35 | 75 | AVANCE | 1 veste sans manche |
+| Pôl | pol@fgc.fr | EMPLOYE | 35 | 10 | DEBUTANT | 1 polo manches longues (new) |
+| Cynthia | cynthia@fgc.fr | EMPLOYE | 35 | 10 | DEBUTANT | 2 t-shirts, 2 polaires manches longues |
+| Gabin | gabin@fgc.fr | EMPLOYE | 25 | 65 | AVANCE | 1 polo manches longues + 2 polos |
+| Aya | aya@fgc.fr | EMPLOYE | 15 | 50 | INTERMEDIAIRE | — |
+| Agent de sécurité | securite@fgc.fr | EMPLOYE | 15 | 25 | INTERMEDIAIRE | Badge |
+| Hiba | hiba@fgc.fr | EMPLOYE | 15 | 10 | DEBUTANT | — |
+| Daniela | daniela@fgc.fr | EMPLOYE | 15 | 10 | DEBUTANT | — |
 
 ---
 
@@ -548,42 +548,9 @@ CLOTURE   → clôturé (cloturedLe auto-renseigné)
 
 ---
 
-### Services (5 services — relatifs à aujourd'hui)
-
-| Décalage | Statut | Manager | Taux | Note |
-|---|---|---|---|---|
-| J-3 | DONE | Kévin | 94% | Soirée chargée, piste 4 en panne en fin de service. Réparation prévue lundi. |
-| J-2 | DONE | Mégane | 87% | RAS. Bon service, équipe au complet. |
-| J-1 | DONE | Micka | 72% | — |
-| Aujourd'hui | IN_PROGRESS | Kévin | 28% | Vérifier stock bière avant 18h, livraison annulée hier. |
-| J+1 | NOT_STARTED | Mégane | 0% | — |
-
-**Heure d'ouverture :** 10:00 — **Heure de fermeture :** 23:00
 
 ---
 
-### Assignations (service du jour + J-1)
-
-**Aujourd'hui (IN_PROGRESS) :**
-| Employé | Zone |
-|---|---|
-| Kévin | Accueil |
-| Patou | Accueil |
-| Erwan | Salle |
-| Gabin | Bar |
-| Cynthia | Bar |
-| Aya | Salle |
-
-**J-1 (DONE) :**
-| Employé | Zone |
-|---|---|
-| Micka | Accueil |
-| Pôl | Accueil |
-| Hiba | Bar |
-| Daniela | Salle |
-| Erwan | Salle |
-
----
 
 ### Incidents (4)
 
