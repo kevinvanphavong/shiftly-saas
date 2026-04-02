@@ -46,6 +46,9 @@ RUN composer dump-autoload --optimize --no-dev \
 # Config Nginx
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
+# Config PHP-FPM — Unix socket pour éviter conflit avec PORT Railway
+COPY docker/php-fpm-www.conf /usr/local/etc/php-fpm.d/www.conf
+
 # Tuning OPcache
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
     && echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
@@ -62,6 +65,6 @@ RUN printf '#!/bin/sh\nset -e\n\nexport APP_ENV=prod\nexport APP_DEBUG=0\n\nACTU
 RUN mkdir -p var/cache var/log config/jwt \
     && chown -R www-data:www-data var/ config/jwt/
 
-EXPOSE 80
+EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
