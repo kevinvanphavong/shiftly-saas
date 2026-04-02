@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# Résolution du port — Railway injecte $PORT dynamiquement
+ACTUAL_PORT="${PORT:-80}"
+echo "Port d'écoute : $ACTUAL_PORT"
+sed -i "s/NGINX_PORT/$ACTUAL_PORT/" /etc/nginx/nginx.conf
+
 JWT_DIR="/var/www/html/config/jwt"
 mkdir -p "$JWT_DIR"
 
@@ -25,13 +30,11 @@ chown www-data:www-data "$JWT_DIR"/*.pem 2>/dev/null || true
 chmod 600 "$JWT_DIR/private.pem" 2>/dev/null || true
 chmod 644 "$JWT_DIR/public.pem" 2>/dev/null || true
 
-# Init BDD — schema:create ignore les tables déjà existantes
-# On n'utilise PAS doctrine:migrations:migrate (migrations en dialecte SQLite)
+# Init BDD
 php /var/www/html/bin/console doctrine:schema:create --no-interaction --env=prod 2>/dev/null || true
 php /var/www/html/bin/console doctrine:migrations:version --add --all --no-interaction --env=prod 2>/dev/null || true
 
-# Permissions var/ pour php-fpm (www-data)
 chown -R www-data:www-data /var/www/html/var/ 2>/dev/null || true
 
-echo "Démarrage de l'application..."
+echo "Démarrage sur le port $ACTUAL_PORT..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
