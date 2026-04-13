@@ -2,9 +2,10 @@
 
 namespace App\Controller;
 
-use App\Entity\Centre;
 use App\Entity\Service;
 use App\Entity\User;
+use App\Repository\UserRepository;
+use App\Repository\ZoneRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Évite les problèmes de résolution IRI + securityPostDenormalize d'API Platform.
  *
  * POST /api/services/create
- * Body : { "date": "2026-03-27", "heureDebut": "10:00", "heureFin": "22:00" }
+ * Body : { "date": "2026-03-27", "heureDebut": "10:00", "heureFin": "22:00", "managerIds": [1, 2] }
  * → 201 : { id, date, heureDebut, heureFin, statut, tauxCompletion }
  * → 409 : { error: "Un service existe déjà pour cette date." }
  */
@@ -29,6 +30,8 @@ class CreateServiceController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly UserRepository         $userRepo,
+        private readonly ZoneRepository         $zoneRepo,
     ) {}
 
     #[Route('/api/services/create', name: 'api_service_create_custom', methods: ['POST'], format: 'json')]
@@ -39,6 +42,7 @@ class CreateServiceController extends AbstractController
         $dateStr    = trim((string) ($body['date']       ?? ''));
         $heureDebut = trim((string) ($body['heureDebut'] ?? ''));
         $heureFin   = trim((string) ($body['heureFin']   ?? ''));
+        $managerIds = $body['managerIds'] ?? [];
 
         if (!$dateStr) {
             throw new BadRequestHttpException('date est requis.');
@@ -68,6 +72,16 @@ class CreateServiceController extends AbstractController
         if ($heureFin) {
             $hf = \DateTimeImmutable::createFromFormat('H:i', $heureFin);
             if ($hf) $service->setHeureFin($hf);
+        }
+
+        // Associer les managers sélectionnés (filtrés sur le même centre)
+        if (is_array($managerIds) && count($managerIds) > 0) {
+            foreach ($managerIds as $managerId) {
+                $manager = $this->userRepo->find((int) $managerId);
+                if ($manager && $manager->getCentre()?->getId() === $centre->getId()) {
+                    $service->addManager($manager);
+                }
+            }
         }
 
         try {

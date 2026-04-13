@@ -114,6 +114,12 @@ export interface ServiceListZone {
   postes:  ServiceListZonePoste[]
 }
 
+export interface ServiceListManager {
+  id:          number
+  nom:         string
+  avatarColor: string
+}
+
 /** Item retourné par GET /api/services/list */
 export interface ServiceListItem {
   id:             number
@@ -125,4 +131,5 @@ export interface ServiceListItem {
   note:           string | null
   staff:          ServiceListStaffMember[]
   zones:          ServiceListZone[]
+  managers:       ServiceListManager[]
 }

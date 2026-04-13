@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter }                         from 'next/navigation'
-import { useCurrentUser }                    from '@/hooks/useCurrentUser'
+import { useManagerGuard }                   from '@/hooks/useManagerGuard'
 import { useCreateStaff, useUpdateStaff }    from '@/hooks/useStaff'
 import api                                   from '@/lib/api'
 import type { StaffMember }                  from '@/types/staff'
@@ -11,10 +11,10 @@ import ModalEditStaff                        from '@/components/staff/ModalEditS
 import ModalStaffCompetences                 from '@/components/staff/ModalStaffCompetences'
 
 export default function EditeurStaffPage() {
-  const router       = useRouter()
-  const { user }     = useCurrentUser()
-  const createStaff  = useCreateStaff()
-  const updateStaff  = useUpdateStaff()
+  const router        = useRouter()
+  const { isManager } = useManagerGuard()
+  const createStaff   = useCreateStaff()
+  const updateStaff   = useUpdateStaff()
 
   // ── Données ─────────────────────────────────────────────────────────────────
   const [members,  setMembers]  = useState<StaffMember[]>([])
@@ -42,8 +42,8 @@ export default function EditeurStaffPage() {
   }, [])
 
   useEffect(() => {
-    if (user) fetchMembers()
-  }, [user, fetchMembers])
+    if (isManager) fetchMembers()
+  }, [isManager, fetchMembers])
 
   // ── CRUD ─────────────────────────────────────────────────────────────────────
   async function handleSave(data: {
@@ -75,6 +75,8 @@ export default function EditeurStaffPage() {
       setApiError('Impossible de modifier le statut.')
     }
   }
+
+  if (!isManager) return null
 
   return (
     <div className="mx-auto px-4 pb-24 lg:max-w-2xl">

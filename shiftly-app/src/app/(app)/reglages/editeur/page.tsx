@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import type {
   EditorTab,
   EditorZone,
@@ -14,7 +13,7 @@ import type {
   TutorielFormData,
 } from '@/types/editeur'
 import api from '@/lib/api'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useManagerGuard } from '@/hooks/useManagerGuard'
 
 import EditorTabs          from '@/components/editeur/EditorTabs'
 import ZoneList            from '@/components/editeur/ZoneList'
@@ -29,8 +28,7 @@ import ModalConfirmDelete  from '@/components/editeur/ModalConfirmDelete'
 import ModalMoveZone       from '@/components/editeur/ModalMoveZone'
 
 export default function EditeurPage() {
-  const router = useRouter()
-  const { user } = useCurrentUser()
+  const { isManager, loading: userLoading } = useManagerGuard()
 
   // ── Données ────────────────────────────────────────────────────────────────
   const [zones,       setZones]       = useState<EditorZone[]>([])
@@ -93,12 +91,12 @@ export default function EditeurPage() {
   }, [])
 
   useEffect(() => {
-    if (user) fetchZones()
-  }, [user, fetchZones])
+    if (isManager) fetchZones()
+  }, [isManager, fetchZones])
 
   useEffect(() => {
-    if (user && activeTab === 'tutoriels') fetchTutoriels()
-  }, [user, activeTab, fetchTutoriels])
+    if (isManager && activeTab === 'tutoriels') fetchTutoriels()
+  }, [isManager, activeTab, fetchTutoriels])
 
   // ── Chargement missions + compétences quand une zone est sélectionnée ──────
   const fetchZoneData = useCallback(async (zoneId: number) => {
@@ -287,6 +285,8 @@ export default function EditeurPage() {
   }
 
   const confirmItem = confirmDelete?.item as (EditorZone & EditorMission & EditorCompetence & EditorTutoriel) | undefined
+
+  if (!isManager) return null
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (

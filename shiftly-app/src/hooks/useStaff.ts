@@ -69,6 +69,8 @@ export function useUpdateStaff() {
       api.put(`/editeur/staff/${id}`, payload).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', centreId] })
+      // Invalider aussi ['me'] au cas où le manager a modifié sa propre couleur d'avatar
+      queryClient.invalidateQueries({ queryKey: ['me'] })
     },
   })
 }

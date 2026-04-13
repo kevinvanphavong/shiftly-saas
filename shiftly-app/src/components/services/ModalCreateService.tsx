@@ -35,9 +35,9 @@ export default function ModalCreateService({ open, onClose }: Props) {
   const { data: staffData } = useStaff()
   const managers = (staffData?.members ?? []).filter(m => m.role === 'MANAGER')
 
-  const [apiError, setApiError] = useState<string | null>(null)
+  const [apiError,          setApiError]          = useState<string | null>(null)
+  const [selectedManagerIds, setSelectedManagerIds] = useState<number[]>([])
 
-  // Date min = aujourd'hui
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   const {
@@ -57,35 +57,44 @@ export default function ModalCreateService({ open, onClose }: Props) {
   function handleClose() {
     reset()
     setApiError(null)
+    setSelectedManagerIds([])
     onClose()
+  }
+
+  function toggleManager(id: number) {
+    setSelectedManagerIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
   }
 
   function onSubmit(values: FormValues) {
     setApiError(null)
 
-    mutate(values, {
-      onSuccess: () => handleClose(),
+    mutate(
+      { ...values, managerIds: selectedManagerIds },
+      {
+        onSuccess: () => handleClose(),
 
-      onError: (err: unknown) => {
-        // Extraire le message d'erreur retourné par Symfony (409 ou 400)
-        const msg =
-          (err as { response?: { data?: { error?: string; 'hydra:description'?: string } } })
-            ?.response?.data?.error
-          ?? (err as { response?: { data?: { 'hydra:description'?: string } } })
-            ?.response?.data?.['hydra:description']
-          ?? 'Une erreur est survenue.'
-        setApiError(msg)
+        onError: (err: unknown) => {
+          const msg =
+            (err as { response?: { data?: { error?: string; 'hydra:description'?: string } } })
+              ?.response?.data?.error
+            ?? (err as { response?: { data?: { 'hydra:description'?: string } } })
+              ?.response?.data?.['hydra:description']
+            ?? 'Une erreur est survenue.'
+          setApiError(msg)
+        },
       },
-    })
+    )
   }
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — z-[55] pour passer au-dessus de la bottom nav (z-50) */}
           <motion.div
-            className="fixed inset-0 bg-black/60 z-40"
+            className="fixed inset-0 bg-black/60 z-[55]"
             variants={backdropVariants}
             initial="closed"
             animate="open"
@@ -93,9 +102,9 @@ export default function ModalCreateService({ open, onClose }: Props) {
             onClick={handleClose}
           />
 
-          {/* Sheet */}
+          {/* Sheet — z-[60] */}
           <motion.div
-            className="fixed bottom-0 inset-x-0 z-50 bg-surface rounded-t-[24px] border-t border-border"
+            className="fixed bottom-0 inset-x-0 z-[60] bg-surface rounded-t-[24px] border-t border-border"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}
             variants={sheetVariants}
             initial="closed"
@@ -107,7 +116,7 @@ export default function ModalCreateService({ open, onClose }: Props) {
               <div className="w-9 h-1 rounded-full bg-border" />
             </div>
 
-            <div className="px-5 pb-2">
+            <div className="px-5 pb-2 overflow-y-auto max-h-[85vh]">
               {/* En-tête */}
               <div className="flex items-center justify-between py-3 mb-1">
                 <h2 className="font-syne font-bold text-[16px] text-text">
@@ -175,35 +184,45 @@ export default function ModalCreateService({ open, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Manager responsable */}
+                {/* Managers sélectionnables */}
                 {managers.length > 0 && (
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] font-semibold text-muted uppercase tracking-wide">
                       Manager responsable
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {managers.map(m => (
-                        <div
-                          key={m.id}
-                          className="flex items-center gap-2 bg-surface2 border border-border rounded-[10px] px-3 py-2"
-                        >
-                          <div
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shrink-0"
-                            style={{ background: `linear-gradient(135deg, #f97316, #fb923c)` }}
+                      {managers.map(m => {
+                        const selected = selectedManagerIds.includes(m.id)
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => toggleManager(m.id)}
+                            className={cn(
+                              'flex items-center gap-2 rounded-[10px] px-3 py-2 transition-all border',
+                              selected
+                                ? 'bg-accent/10 border-accent/50 text-text'
+                                : 'bg-surface2 border-border text-muted hover:text-text hover:border-accent/30',
+                            )}
                           >
-                            {m.nom.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="text-[12px] text-text">{m.nom}</span>
-                        </div>
-                      ))}
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shrink-0"
+                              style={{ background: `linear-gradient(135deg, ${m.avatarColor ?? '#f97316'}, ${m.avatarColor ?? '#f97316'}cc)` }}
+                            >
+                              {m.nom.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-[12px] font-medium">{m.nom}</span>
+                            {selected && (
+                              <span className="text-accent text-[11px] font-bold">✓</span>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
-                    <p className="text-[10px] text-muted">
-                      Tous les managers du centre sont responsables du service.
-                    </p>
                   </div>
                 )}
 
-                {/* Erreur API (doublon date, etc.) */}
+                {/* Erreur API */}
                 {apiError && (
                   <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] rounded-[10px] px-4 py-3">
                     <p className="text-[12px] text-red">{apiError}</p>

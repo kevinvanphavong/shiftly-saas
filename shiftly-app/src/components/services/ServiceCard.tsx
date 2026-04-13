@@ -58,8 +58,8 @@ export default function ServiceCard({ service, isManager, onDelete, onAddNote }:
   const { mutate: deletePoste } = useDeletePoste()
 
   const badge     = resolveBadge(service)
-  const canEdit   = isManager && badge === 'planifie'
-  const canDelete = canEdit
+  const canEdit   = isManager && (badge === 'planifie' || badge === 'en_cours')
+  const canDelete = isManager && badge === 'planifie'
 
   const dateLabel = (() => {
     try { return format(parseISO(service.date), 'EEEE d MMMM yyyy', { locale: fr }) }

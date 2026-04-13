@@ -5,22 +5,26 @@ import { motion }               from 'framer-motion'
 import { listVariants, listItemVariants } from '@/lib/animations'
 import { useAuthStore }         from '@/store/authStore'
 import { ty }                    from '@/lib/typography'
-import { useServices, useDeleteService, useAddServiceNote } from '@/hooks/useServices'
+import { cn }                    from '@/lib/cn'
+import { useServicesList, useDeleteService, useAddServiceNote } from '@/hooks/useService'
 import ServiceCard         from '@/components/services/ServiceCard'
 import ModalCreateService  from '@/components/services/ModalCreateService'
 
 // ─── Page Planning ────────────────────────────────────────────────────────────
 
+const LIMITS = [10, 20, 50]
+
 export default function ServicesPage() {
   const isManager  = useAuthStore(s => s.user?.role === 'MANAGER')
   const centreId   = useAuthStore(s => s.centreId)
 
-  const { data, isLoading, isError, refetch } = useServices()
+  const { data, isLoading, isError, refetch } = useServicesList()
 
   const { mutate: deleteService } = useDeleteService()
   const { mutate: addNote }       = useAddServiceNote()
 
-  const [showCreate, setShowCreate] = useState(false)
+  const [showCreate,  setShowCreate]  = useState(false)
+  const [limitPasse,  setLimitPasse]  = useState(10)
 
   // ── Loading ────────────────────────────────────────────────────────────────
 
@@ -64,10 +68,11 @@ export default function ServicesPage() {
     )
   }
 
-  const services      = data ?? []
-  const todayStr      = new Date().toISOString().slice(0, 10)
-  const todayService  = services.find(s => s.date === todayStr)
-  const otherServices = services.filter(s => s.date !== todayStr)
+  const services       = data ?? []
+  const todayStr       = new Date().toISOString().slice(0, 10)
+  const todayService   = services.find(s => s.date === todayStr)
+  const futureServices = services.filter(s => s.date > todayStr)
+  const pastServices   = services.filter(s => s.date < todayStr)
 
   // ── Empty state ────────────────────────────────────────────────────────────
 
@@ -118,6 +123,18 @@ export default function ServicesPage() {
     )
   }
 
+  // ── Handlers partagés ──────────────────────────────────────────────────────
+
+  function handleDelete(id: number) {
+    if (window.confirm('Supprimer ce service ? Cette action est irréversible.')) {
+      deleteService(id)
+    }
+  }
+
+  function handleNote(id: number, note: string) {
+    addNote({ serviceId: id, note })
+  }
+
   // ── Liste ──────────────────────────────────────────────────────────────────
 
   return (
@@ -150,45 +167,85 @@ export default function ServicesPage() {
           <ServiceCard
             service={todayService}
             isManager={!!isManager}
-            onDelete={isManager ? (id) => {
-              if (window.confirm('Supprimer ce service ? Cette action est irréversible.')) {
-                deleteService(id)
-              }
-            } : undefined}
-            onAddNote={isManager ? (id, note) => addNote({ serviceId: id, note }) : undefined}
+            onDelete={isManager ? handleDelete : undefined}
+            onAddNote={isManager ? handleNote : undefined}
           />
         </div>
       )}
 
-      {/* ── Planning ─────────────────────────────────────────────────────────── */}
-      {otherServices.length > 0 && (
-        <div>
-          {todayService && (
-            <p className={`${ty.labelMuted} uppercase tracking-wide mb-2`}>
-              Planning
-            </p>
-          )}
+      {/* ── À venir ──────────────────────────────────────────────────────────── */}
+      {futureServices.length > 0 && (
+        <div className="mb-5">
+          <p className={`${ty.labelMuted} uppercase tracking-wide mb-2`}>
+            À venir
+          </p>
           <motion.div
             className="flex flex-col gap-3"
             variants={listVariants}
             initial="hidden"
             animate="show"
           >
-            {otherServices.map(service => (
+            {futureServices.map(service => (
               <motion.div key={service.id} variants={listItemVariants}>
                 <ServiceCard
                   service={service}
                   isManager={!!isManager}
-                  onDelete={isManager ? (id) => {
-                    if (window.confirm('Supprimer ce service ? Cette action est irréversible.')) {
-                      deleteService(id)
-                    }
-                  } : undefined}
-                  onAddNote={isManager ? (id, note) => addNote({ serviceId: id, note }) : undefined}
+                  onDelete={isManager ? handleDelete : undefined}
+                  onAddNote={isManager ? handleNote : undefined}
                 />
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      )}
+
+      {/* ── Passés ───────────────────────────────────────────────────────────── */}
+      {pastServices.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className={`${ty.labelMuted} uppercase tracking-wide`}>
+              Passés
+            </p>
+            {/* Sélecteur de limite en pastilles */}
+            <div className="flex items-center gap-1.5">
+              {LIMITS.map(n => (
+                <button
+                  key={n}
+                  onClick={() => setLimitPasse(n)}
+                  className={cn(
+                    'w-7 h-7 rounded-full text-[11px] font-bold transition-all',
+                    limitPasse === n
+                      ? 'bg-accent text-white'
+                      : 'bg-surface2 border border-border text-muted hover:text-text',
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+          <motion.div
+            className="flex flex-col gap-3"
+            variants={listVariants}
+            initial="hidden"
+            animate="show"
+          >
+            {pastServices.slice(0, limitPasse).map(service => (
+              <motion.div key={service.id} variants={listItemVariants}>
+                <ServiceCard
+                  service={service}
+                  isManager={!!isManager}
+                  onDelete={isManager ? handleDelete : undefined}
+                  onAddNote={isManager ? handleNote : undefined}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+          {pastServices.length > limitPasse && (
+            <p className={`${ty.metaLg} text-center mt-3`}>
+              {pastServices.length - limitPasse} service{pastServices.length - limitPasse > 1 ? 's' : ''} masqué{pastServices.length - limitPasse > 1 ? 's' : ''}
+            </p>
+          )}
         </div>
       )}
 

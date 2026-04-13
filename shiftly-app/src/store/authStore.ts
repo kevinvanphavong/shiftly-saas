@@ -50,7 +50,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   }),
 
   logout: () => {
-    if (typeof window !== 'undefined') localStorage.removeItem('token')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token')
+      document.cookie = 'token=; path=/; max-age=0'
+    }
     set({ token: null, user: null, centreId: null, userId: null })
   },
 }))

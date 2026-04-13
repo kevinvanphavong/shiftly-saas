@@ -433,6 +433,7 @@ class EditeurController extends AbstractController
         $user->setTailleBas($data['tailleBas'] ?? null);
         $user->setPointure($data['pointure'] ?? null);
         $user->setActif(true);
+        $user->setAvatarColor($data['avatarColor'] ?? null);
         $user->setPassword($this->hasher->hashPassword($user, $data['password']));
 
         $this->em->persist($user);
@@ -456,13 +457,14 @@ class EditeurController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         if (isset($data['nom']))        $user->setNom($data['nom']);
-        if (array_key_exists('prenom', $data))     $user->setPrenom($data['prenom']);
+        if (array_key_exists('prenom', $data))      $user->setPrenom($data['prenom']);
         if (isset($data['email']))      $user->setEmail($data['email']);
         if (isset($data['role']))       $user->setRole($data['role']);
-        if (array_key_exists('tailleHaut', $data)) $user->setTailleHaut($data['tailleHaut']);
-        if (array_key_exists('tailleBas', $data))  $user->setTailleBas($data['tailleBas']);
-        if (array_key_exists('pointure', $data))   $user->setPointure($data['pointure']);
+        if (array_key_exists('tailleHaut', $data))  $user->setTailleHaut($data['tailleHaut']);
+        if (array_key_exists('tailleBas', $data))   $user->setTailleBas($data['tailleBas']);
+        if (array_key_exists('pointure', $data))    $user->setPointure($data['pointure']);
         if (isset($data['actif']))      $user->setActif((bool) $data['actif']);
+        if (array_key_exists('avatarColor', $data)) $user->setAvatarColor($data['avatarColor']);
         if (!empty($data['password']))  $user->setPassword($this->hasher->hashPassword($user, $data['password']));
 
         $this->em->flush();
@@ -594,16 +596,17 @@ class EditeurController extends AbstractController
     private function serializeUser(User $u): array
     {
         return [
-            'id'         => $u->getId(),
-            'nom'        => $u->getNom(),
-            'prenom'     => $u->getPrenom(),
-            'email'      => $u->getEmail(),
-            'role'       => $u->getRole(),
-            'points'     => $u->getPoints(),
-            'actif'      => $u->isActif(),
-            'tailleHaut' => $u->getTailleHaut(),
-            'tailleBas'  => $u->getTailleBas(),
-            'pointure'   => $u->getPointure(),
+            'id'          => $u->getId(),
+            'nom'         => $u->getNom(),
+            'prenom'      => $u->getPrenom(),
+            'email'       => $u->getEmail(),
+            'role'        => $u->getRole(),
+            'points'      => $u->getPoints(),
+            'actif'       => $u->isActif(),
+            'tailleHaut'  => $u->getTailleHaut(),
+            'tailleBas'   => $u->getTailleBas(),
+            'pointure'    => $u->getPointure(),
+            'avatarColor' => $u->getAvatarColor(),
         ];
     }
 }

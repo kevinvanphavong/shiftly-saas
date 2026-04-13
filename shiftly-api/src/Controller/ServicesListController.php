@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\MissionRepository;
 use App\Repository\ServiceRepository;
+use App\Repository\ZoneRepository;
 use App\Service\ServiceStatutResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,7 +19,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Retourne la liste enrichie des services d'un centre :
  *  - données de base (date, heures, statut, tauxCompletion, note)
  *  - staff assigné (avatars)
- *  - progression par zone
+ *  - toutes les zones du centre (même vides)
+ *  - managers associés au service
  *
  * Triée par date décroissante.
  */
@@ -28,6 +30,7 @@ class ServicesListController extends AbstractController
     public function __construct(
         private readonly ServiceRepository    $serviceRepo,
         private readonly MissionRepository    $missionRepo,
+        private readonly ZoneRepository       $zoneRepo,
         private readonly ServiceStatutResolver $statutResolver,
     ) {}
 
@@ -46,20 +49,22 @@ class ServicesListController extends AbstractController
 
         $services = $this->serviceRepo->findByCentreDesc($centreId);
 
+        // Toutes les zones du centre, triées par ordre
+        $allZones = $this->zoneRepo->findBy(
+            ['centre' => $currentUser->getCentre()],
+            ['ordre' => 'ASC']
+        );
+
         $result = [];
 
         foreach ($services as $service) {
             // ── Postes groupés par zone ───────────────────────────────────────
             $postesByZone = []; // zoneId → [poste, ...]
-            $zonesMeta    = []; // zoneId → zone entity
             $staffSeen    = []; // userId → true (dédup)
             $staffList    = [];
 
             foreach ($service->getPostes() as $poste) {
-                $zone = $poste->getZone();
-                $zid  = $zone->getId();
-
-                $zonesMeta[$zid]    ??= $zone;
+                $zid = $poste->getZone()->getId();
                 $postesByZone[$zid] ??= [];
                 $postesByZone[$zid][] = $poste;
 
@@ -75,20 +80,19 @@ class ServicesListController extends AbstractController
                 }
             }
 
-            // ── Progression par zone ──────────────────────────────────────────
-            $zonesData = [];
+            // ── Progression par zone (toutes les zones, même vides) ──────────
+            $zonesData   = [];
             $globalTotal = 0;
             $globalDone  = 0;
 
-            foreach ($postesByZone as $zid => $postes) {
-                $zone = $zonesMeta[$zid];
+            foreach ($allZones as $zone) {
+                $zid    = $zone->getId();
+                $postes = $postesByZone[$zid] ?? [];
 
-                // Total missions de la zone pour ce service
                 $missions = $this->missionRepo->findForService($zid, $service->getId());
                 $total    = count($missions);
 
-                // Déduplication des completions par missionId (évite double-comptage
-                // quand plusieurs postes existent pour la même zone)
+                // Déduplication des completions par missionId
                 $doneMissionIds = [];
                 foreach ($postes as $poste) {
                     foreach ($poste->getCompletions() as $completion) {
@@ -102,7 +106,6 @@ class ServicesListController extends AbstractController
                 $globalTotal += $total;
                 $globalDone  += $completed;
 
-                // Détail des postes (staff assigné à cette zone)
                 $postesData = array_map(fn($p) => [
                     'posteId'     => $p->getId(),
                     'userId'      => $p->getUser()?->getId(),
@@ -123,12 +126,14 @@ class ServicesListController extends AbstractController
             // Taux de completion global calculé dynamiquement
             $globalTaux = $globalTotal > 0 ? round($globalDone / $globalTotal * 100, 1) : 0.0;
 
-            // Tri des zones par ordre
-            usort($zonesData, fn($a, $b) =>
-                ($zonesMeta[$a['id']]->getOrdre() ?? 0) <=> ($zonesMeta[$b['id']]->getOrdre() ?? 0)
-            );
-
             $statut = $this->statutResolver->resolve($service);
+
+            // Managers du service
+            $managers = array_map(fn(User $m) => [
+                'id'          => $m->getId(),
+                'nom'         => $m->getNom(),
+                'avatarColor' => $m->getAvatarColor() ?? '#f97316',
+            ], $service->getManagers()->toArray());
 
             $result[] = [
                 'id'             => $service->getId(),
@@ -140,6 +145,7 @@ class ServicesListController extends AbstractController
                 'note'           => $service->getNote(),
                 'staff'          => $staffList,
                 'zones'          => $zonesData,
+                'managers'       => $managers,
             ];
         }
 

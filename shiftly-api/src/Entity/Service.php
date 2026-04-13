@@ -108,11 +108,21 @@ class Service
     #[ORM\OneToMany(mappedBy: 'service', targetEntity: Incident::class)]
     private Collection $incidents;
 
+    /** Managers responsables de ce service */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'service_manager')]
+    private Collection $managers;
+
     public function __construct()
     {
         $this->postes    = new ArrayCollection();
         $this->incidents = new ArrayCollection();
+        $this->managers  = new ArrayCollection();
     }
+
+    public function getManagers(): Collection { return $this->managers; }
+    public function addManager(User $user): static { if (!$this->managers->contains($user)) { $this->managers->add($user); } return $this; }
+    public function removeManager(User $user): static { $this->managers->removeElement($user); return $this; }
 
     public function getId(): ?int { return $this->id; }
     public function getCentre(): ?Centre { return $this->centre; }

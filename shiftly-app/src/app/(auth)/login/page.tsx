@@ -105,7 +105,6 @@ export default function LoginPage() {
 
         <div className="text-center mt-4">
           <span className="text-[11px] text-muted">
-            Démo : manager@shiftly.dev / manager123
           </span>
         </div>
       </div>

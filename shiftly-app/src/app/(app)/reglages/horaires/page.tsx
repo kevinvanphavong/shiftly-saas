@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import api from '@/lib/api'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useManagerGuard } from '@/hooks/useManagerGuard'
+import { useAuthStore }    from '@/store/authStore'
 import {
   JOURS_SEMAINE,
   JOURS_LABELS,
@@ -13,7 +14,8 @@ import {
 } from '@/types/centre'
 
 export default function HorairesPage() {
-  const { user, loading: userLoading } = useCurrentUser()
+  const { isManager } = useManagerGuard()
+  const centreId      = useAuthStore(s => s.centreId)
 
   const [hours,          setHours]          = useState<OpeningHours>(DEFAULT_OPENING_HOURS)
   const [fetchingCentre, setFetchingCentre] = useState(false)
@@ -22,13 +24,13 @@ export default function HorairesPage() {
   const [error,          setError]          = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user?.centre?.id) return
+    if (!centreId) return
     setFetchingCentre(true)
-    api.get(`/centres/${user.centre.id}/horaires`)
+    api.get(`/centres/${centreId}/horaires`)
       .then(res => setHours(res.data as OpeningHours))
       .catch(() => setError('Impossible de charger les horaires.'))
       .finally(() => setFetchingCentre(false))
-  }, [user?.centre?.id])
+  }, [centreId])
 
   function toggleJour(jour: JourSemaine) {
     setHours(prev => ({
@@ -48,12 +50,12 @@ export default function HorairesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!user?.centre?.id) return
+    if (!centreId) return
     setSaving(true)
     setError(null)
     setSuccess(false)
     try {
-      await api.put(`/centres/${user.centre.id}/horaires`, hours)
+      await api.put(`/centres/${centreId}/horaires`, hours)
       setSuccess(true)
     } catch {
       setError("Impossible d'enregistrer les horaires.")
@@ -62,7 +64,7 @@ export default function HorairesPage() {
     }
   }
 
-  const isLoading = userLoading || fetchingCentre
+  if (!isManager) return null
 
   return (
     <div className="mx-auto px-5 py-6 lg:max-w-2xl">
@@ -84,7 +86,7 @@ export default function HorairesPage() {
         </div>
       </div>
 
-      {isLoading ? (
+      {fetchingCentre ? (
         <div className="bg-surface border border-border rounded-[18px] overflow-hidden divide-y divide-border animate-pulse">
           {JOURS_SEMAINE.map(j => (
             <div key={j} className="flex items-center gap-3 px-4 py-3.5">

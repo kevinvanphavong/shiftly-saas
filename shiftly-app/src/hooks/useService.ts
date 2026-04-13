@@ -99,9 +99,10 @@ export function useTodayService(): ServiceListItem | undefined {
 // ─── Créer un service ─────────────────────────────────────────────────────────
 
 interface CreateServicePayload {
-  date:        string   // 'YYYY-MM-DD'
-  heureDebut:  string   // 'HH:mm'
-  heureFin:    string   // 'HH:mm'
+  date:         string     // 'YYYY-MM-DD'
+  heureDebut:   string     // 'HH:mm'
+  heureFin:     string     // 'HH:mm'
+  managerIds?:  number[]
 }
 
 export function useCreateService() {

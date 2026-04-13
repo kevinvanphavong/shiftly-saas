@@ -1,8 +1,27 @@
-// L'authentification est gérée côté client par l'intercepteur axios (401 → /login).
-// Le middleware ne fait aucune vérification de token pour éviter la désynchronisation
-// entre localStorage (utilisé par axios) et les cookies (accessibles server-side).
-export { } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+// Routes accessibles sans authentification
+const PUBLIC_PATHS = ['/login']
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const token = request.cookies.get('token')?.value
+
+  // Déjà connecté et accède à /login → rediriger vers /service
+  if (pathname === '/login' && token) {
+    return NextResponse.redirect(new URL('/service', request.url))
+  }
+
+  // Non connecté et accède à une route protégée → rediriger vers /login
+  if (!PUBLIC_PATHS.includes(pathname) && !token) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
-  matcher: [],
+  // Exclure les assets statiques Next.js, images et fichiers avec extension
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 }
