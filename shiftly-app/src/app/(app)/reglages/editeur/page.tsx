@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import type {
   EditorTab,
   EditorZone,
@@ -28,6 +29,7 @@ import ModalConfirmDelete  from '@/components/editeur/ModalConfirmDelete'
 import ModalMoveZone       from '@/components/editeur/ModalMoveZone'
 
 export default function EditeurPage() {
+  const router = useRouter()
   const { isManager, loading: userLoading } = useManagerGuard()
 
   // ── Données ────────────────────────────────────────────────────────────────
