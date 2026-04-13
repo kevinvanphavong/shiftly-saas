@@ -51,3 +51,57 @@ html, body {
 @layer utilities {
   .font-syne { font-family: var(--font-syne), sans-serif; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHIE — Textes courants (<p> et <span> de base)
+   Modifier ce bloc pour changer l'apparence globale des textes dans toute l'app.
+   Ces classes sont référencées via l'objet `ty` dans src/lib/typography.ts.
+   ─────────────────────────────────────────────────────────────────────────────
+   @layer components : priorité inférieure à @layer utilities (Tailwind)
+   → les overrides className={`${ty.meta} text-green`} continuent de fonctionner.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* Corps de texte ─────────────────────────────────────────────────────────── */
+
+  .ty-body {
+    font-size: 12px;
+    color:     var(--text);
+    font-family: var(--font-syne);
+  }
+
+  .ty-body-muted {
+    font-size: 12px;
+    color:     var(--muted);
+    color:     red;
+  }
+
+  .ty-body-lg {
+    font-size: 13px;
+    color:     var(--text);
+    color:     greenyellow;
+    font-family: var(--font-syne);
+  }
+
+  /* Textes secondaires / meta (timestamps, sous-infos, compteurs) ─────────── */
+
+  .ty-meta-sm {
+    font-size: 12px;
+    color:     var(--muted);
+    font-family: var(--font-syne);
+  }
+
+  .ty-meta {
+    font-size: 13px;
+    color:     var(--muted);
+    font-family: var(--font-syne);
+  }
+
+  .ty-meta-lg {
+    font-size: 14px;
+    color:     var(--s);
+    font-family: var(--font-syne);
+  }
+
+}

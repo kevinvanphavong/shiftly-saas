@@ -54,7 +54,7 @@ export default function ProgressionGlobale({
                   style={{ background: z.couleur }}
                 />
                 <span
-                  className="text-[11px] font-bold truncate"
+                  className="text-[11px] font-bold truncate ty-body"
                   style={{ color: z.couleur }}
                 >
                   {z.nom}

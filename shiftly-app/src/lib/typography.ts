@@ -19,9 +19,10 @@ export const ty = {
 
   // ─── Textes secondaires / meta ──────────────────────────────────────────────
   // Timestamps, sous-titres, infos secondaires, compteurs
-  metaSm: 'text-[10px] text-muted',
-  meta:   'text-[11px] text-muted',
-  metaLg: 'text-[12px] text-muted',
+  // → styles dans src/app/typography.css
+  metaSm: 'ty-meta-sm',
+  meta:   'ty-meta',
+  metaLg: 'ty-meta-lg',
 
   // ─── Grands chiffres KPI ────────────────────────────────────────────────────
   // Chiffres du dashboard, pourcentages, valeurs proéminentes
@@ -37,9 +38,10 @@ export const ty = {
 
   // ─── Corps de texte ─────────────────────────────────────────────────────────
   // Contenu courant, descriptions, notes
-  body:      'text-[12px] text-text',
-  bodyMuted: 'text-[12px] text-muted',
-  bodyLg:    'text-[13px] text-text',
+  // → styles dans src/app/typography.css
+  body:      'ty-body',
+  bodyMuted: 'ty-body-muted',
+  bodyLg:    'ty-body-lg',
 
   // ─── Texte de badge ─────────────────────────────────────────────────────────
   // Texte à l'intérieur des badges — couleur à ajouter via override

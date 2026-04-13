@@ -4,7 +4,7 @@ import { ty }   from '@/lib/typography'
 
 // ─── Variants CVA ─────────────────────────────────────────────────────────────
 const trendBadge = cva(
-  'absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-[6px]',
+  'absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-[6px] ty-meta',
   {
     variants: {
       direction: {
