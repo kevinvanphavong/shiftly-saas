@@ -3,7 +3,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import Topbar                   from '@/components/layout/Topbar'
 import HeroServiceCard          from '@/components/service/HeroServiceCard'
-import ProgressionGlobale       from '@/components/service/ProgressionGlobale'
 import ZoneCard                 from '@/components/service/ZoneCard'
 import ModalMissionPonctuelle   from '@/components/service/ModalMissionPonctuelle'
 import ModalAssignerStaff       from '@/components/service/ModalAssignerStaff'
@@ -90,15 +89,6 @@ export default function ServicePage() {
   const totalDone = useMemo(() => zoneStats.reduce((s, z) => s + z.done,  0), [zoneStats])
   const totalAll  = useMemo(() => zoneStats.reduce((s, z) => s + z.total, 0), [zoneStats])
   const globalPct = totalAll > 0 ? Math.round((totalDone / totalAll) * 100) : 0
-
-  const zonePcts = useMemo(
-    () => zoneStats.map(z => ({
-      nom:     z.nom,
-      couleur: z.couleur,
-      pct:     z.total > 0 ? Math.round((z.done / z.total) * 100) : 0,
-    })),
-    [zoneStats]
-  )
 
   // ── Toggle mission ─────────────────────────────────────────────────────────
   const handleToggle = useCallback((
@@ -189,15 +179,10 @@ export default function ServicePage() {
           <HeroServiceCard
             service={data.service}
             globalPct={globalPct}
-            zonePcts={zonePcts}
-            onReportIncident={() => setIncidentOpen(true)}
-          />
-
-          {/* Progression par zone */}
-          <ProgressionGlobale
             stats={zoneStats}
             totalDone={totalDone}
             totalAll={totalAll}
+            onReportIncident={() => setIncidentOpen(true)}
           />
 
           {/* Zone cards */}

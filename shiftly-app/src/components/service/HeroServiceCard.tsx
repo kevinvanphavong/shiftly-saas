@@ -5,7 +5,9 @@ import type { ServicePageData } from '@/types/service'
 interface HeroServiceCardProps {
   service:            ServicePageData['service']
   globalPct:          number
-  zonePcts:           Array<{ nom: string; couleur: string; pct: number }>
+  stats:              Array<{ nom: string; couleur: string; done: number; total: number }>
+  totalDone:          number
+  totalAll:           number
   onReportIncident?:  () => void
 }
 
@@ -18,7 +20,9 @@ const STATUT_CONFIG = {
 export default function HeroServiceCard({
   service,
   globalPct,
-  zonePcts,
+  stats,
+  totalDone,
+  totalAll,
   onReportIncident,
 }: HeroServiceCardProps) {
   const cfg = STATUT_CONFIG[service.statut] ?? STATUT_CONFIG.PLANIFIE
@@ -71,47 +75,56 @@ export default function HeroServiceCard({
           {service.heureFin}
         </div>
 
-        {/* ── Global progress ── */}
-        <div className="mb-3">
-          <div className="flex justify-between mb-1.5">
+        {/* ── Avancement global ── */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
             <span className={ty.meta}>Avancement global</span>
-            <span className={`${ty.meta} font-extrabold text-accent font-syne`}>{globalPct}%</span>
+            <span className="font-syne font-extrabold text-[20px] text-accent leading-none">
+              {globalPct}%
+            </span>
           </div>
-          <div className="h-[7px] bg-surface2 rounded-full overflow-hidden">
+
+          {/* Barre principale */}
+          <div className="h-2 bg-surface2 rounded-full overflow-hidden mb-3">
             <div
-              className="h-full bg-gradient-to-r from-accent to-accent-light rounded-full transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-accent to-accent-light transition-all duration-700"
               style={{ width: `${globalPct}%` }}
             />
           </div>
-        </div>
 
-        {/* ── Zone mini-bars ── */}
-        {zonePcts.length > 0 && (
-          <div
-            className="grid gap-2"
-            style={{ gridTemplateColumns: `repeat(${zonePcts.length}, 1fr)` }}
-          >
-            {zonePcts.map(z => (
-              <div key={z.nom} className="bg-surface2/80 rounded-[10px] p-2.5">
-                <div
-                  className={`${ty.badgeMd} font-extrabold font-syne mb-1.5`}
-                  style={{ color: z.couleur }}
-                >
-                  {z.nom}
+          {/* Détail par zone */}
+          <div className="flex flex-col gap-2.5">
+            {stats.map(z => {
+              const pct = z.total > 0 ? Math.round((z.done / z.total) * 100) : 0
+              return (
+                <div key={z.nom} className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 w-[80px] flex-shrink-0">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: z.couleur }} />
+                    <span className="text-[11px] font-bold truncate" style={{ color: z.couleur }}>{z.nom}</span>
+                  </div>
+                  <div className="flex-1 h-[5px] bg-surface2 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%`, background: z.couleur }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 min-w-[60px] justify-end">
+                    <span className="text-[12px] font-extrabold font-syne" style={{ color: z.couleur }}>{pct}%</span>
+                    <span className="text-[12px] text-muted">{z.done}/{z.total}</span>
+                  </div>
                 </div>
-                <div className="h-[4px] bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${z.pct}%`, background: z.couleur }}
-                  />
-                </div>
-                <div className={`${ty.metaSm} mt-1.5 font-syne font-bold`}>
-                  {z.pct}%
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
-        )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+            <span className="text-[11px] text-muted">Missions complétées</span>
+            <span className="text-[13px] font-extrabold font-syne text-text">
+              {totalDone}<span className="text-muted font-normal">/{totalAll}</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
