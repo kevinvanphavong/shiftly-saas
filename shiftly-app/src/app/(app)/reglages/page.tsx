@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
-import { ty }                from '@/lib/typography'
-import LogoutButton          from '@/components/auth/LogoutButton'
-import ProfileCard           from '@/components/settings/ProfileCard'
-import ManagerLinks           from '@/components/settings/ManagerLinks'
-import CentreManagerSection  from '@/components/settings/CentreManagerSection'
+import dynamic              from 'next/dynamic'
+import { ty }               from '@/lib/typography'
+import LogoutButton         from '@/components/auth/LogoutButton'
+
+// Ces composants lisent Zustand (localStorage) — désactivation SSR pour éviter le mismatch d'hydration
+const ProfileCard          = dynamic(() => import('@/components/settings/ProfileCard'),          { ssr: false })
+const ManagerLinks         = dynamic(() => import('@/components/settings/ManagerLinks'),         { ssr: false })
+const CentreManagerSection = dynamic(() => import('@/components/settings/CentreManagerSection'), { ssr: false })
 
 export const metadata: Metadata = { title: 'Réglages — Shiftly' }
 

@@ -24,7 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Contrôleur dédié à l'éditeur de contenu (zones, missions, compétences).
+ * Contrôleur dédié à la gestion du contenu (zones, missions, compétences).
  * Contourne le bug API Platform parse() on null sur les opérations d'écriture.
  */
 #[Route('/api/editeur')]

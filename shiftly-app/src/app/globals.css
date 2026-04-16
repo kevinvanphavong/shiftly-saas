@@ -80,7 +80,6 @@ html, body {
   .ty-body-lg {
     font-size: 13px;
     color:     var(--text);
-    color:     greenyellow;
     font-family: var(--font-syne);
   }
 
