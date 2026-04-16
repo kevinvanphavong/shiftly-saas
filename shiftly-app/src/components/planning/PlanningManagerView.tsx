@@ -51,57 +51,56 @@ export default function PlanningManagerView() {
   }
 
   if (isLoading) return (
-    <div className="flex h-full items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center">
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
     </div>
   )
 
   if (isError) return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 text-[var(--muted)]">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-2 text-[var(--muted)]">
       <p className="text-2xl">⚠️</p>
       <p className="text-sm">Impossible de charger le planning</p>
     </div>
   )
 
-  const statut     = data?.statut ?? 'BROUILLON'
-  const alertes    = data?.alertes ?? []
-  const stats      = data?.stats
-  const zones      = data?.zones ?? []
+  const statut  = data?.statut ?? 'BROUILLON'
+  const alertes = data?.alertes ?? []
+  const stats   = data?.stats
+  const zones   = data?.zones ?? []
 
   return (
     <>
-      <div className="flex h-full flex-col overflow-hidden">
-
-        {/* ── Header page ── */}
-        <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-6 py-4">
-          <div className="flex items-center gap-3">
-            <h1 className="font-syne text-xl font-bold text-[var(--text)]">Planning</h1>
-            <span className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
-              statut === 'PUBLIE'
-                ? 'bg-[rgba(34,197,94,0.12)] text-[var(--green)]'
-                : 'bg-[rgba(249,115,22,0.12)] text-[var(--accent)]'
-            }`}>
-              {statut === 'PUBLIE' ? 'Publié' : 'Brouillon'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => duplicateWeek.mutate({ sourceWeekStart: weekStart, targetWeekStart: shiftWeek(weekStart, 1) })}
-              className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-3 py-2 text-[13px] text-[var(--text)] transition-colors hover:border-[var(--accent)] hover:bg-[rgba(249,115,22,0.08)]"
-            >
-              📋 Dupliquer semaine
-            </button>
-            <button
-              onClick={() => publishWeek.mutate({ weekStart })}
-              disabled={publishWeek.isPending || statut === 'PUBLIE'}
-              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {publishWeek.isPending ? '…' : '✓ Publier'}
-            </button>
-          </div>
+      {/* ── Header page — sticky ── */}
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-6 py-4">
+        <div className="flex items-center gap-3">
+          <h1 className="font-syne text-xl font-bold text-[var(--text)]">Planning</h1>
+          <span className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
+            statut === 'PUBLIE'
+              ? 'bg-[rgba(34,197,94,0.12)] text-[var(--green)]'
+              : 'bg-[rgba(249,115,22,0.12)] text-[var(--accent)]'
+          }`}>
+            {statut === 'PUBLIE' ? 'Publié' : 'Brouillon'}
+          </span>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => duplicateWeek.mutate({ sourceWeekStart: weekStart, targetWeekStart: shiftWeek(weekStart, 1) })}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-3 py-2 text-[13px] text-[var(--text)] transition-colors hover:border-[var(--accent)] hover:bg-[rgba(249,115,22,0.08)]"
+          >
+            📋 Dupliquer semaine
+          </button>
+          <button
+            onClick={() => publishWeek.mutate({ weekStart })}
+            disabled={publishWeek.isPending || statut === 'PUBLIE'}
+            className="rounded-lg bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {publishWeek.isPending ? '…' : '✓ Publier'}
+          </button>
+        </div>
+      </div>
 
-        {/* ── Navigateur semaine ── */}
+      {/* ── Navigateur semaine — sticky juste en dessous du header ── */}
+      <div className="sticky top-[73px] z-10">
         <WeekNavigator
           weekStart={weekStart}
           weekEnd={weekEnd}
@@ -110,27 +109,28 @@ export default function PlanningManagerView() {
           onNext={() => setWeekStart(ws => shiftWeek(ws, +1))}
           onToday={() => setWeekStart(getCurrentMonday())}
         />
-
-        {/* ── Grille ── */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
-          {data && (
-            <PlanningGrid data={data} onAddShift={openAdd} onEditShift={openEdit} />
-          )}
-        </div>
-
-        {/* ── Stats + Alertes ── */}
-        {stats && (
-          <StatsBar
-            stats={stats}
-            zones={zones}
-            alertCount={alertes.length}
-            showAlerts={showAlerts}
-            onToggleAlerts={() => setShowAlerts(v => !v)}
-          />
-        )}
-        <AlertPanel alertes={alertes} show={showAlerts} />
       </div>
 
+      {/* ── Grille (scroll horizontal) ── */}
+      <div className="p-4 md:p-6">
+        {data && (
+          <PlanningGrid data={data} onAddShift={openAdd} onEditShift={openEdit} />
+        )}
+      </div>
+
+      {/* ── Stats + Alertes ── */}
+      {stats && (
+        <StatsBar
+          stats={stats}
+          zones={zones}
+          alertCount={alertes.length}
+          showAlerts={showAlerts}
+          onToggleAlerts={() => setShowAlerts(v => !v)}
+        />
+      )}
+      <AlertPanel alertes={alertes} show={showAlerts} />
+
+      {/* ── Modal ── */}
       <ShiftModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

@@ -75,7 +75,7 @@ export default function ShiftModal({
     if (isEdit && shift) {
       await updateShift.mutateAsync({
         posteId:      shift.posteId,
-        zoneId:       values.zoneId,
+        zone:         `/api/zones/${values.zoneId}`,
         heureDebut:   values.heureDebut,
         heureFin:     values.heureFin,
         pauseMinutes: values.pauseMinutes,

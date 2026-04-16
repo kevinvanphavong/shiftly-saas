@@ -119,7 +119,7 @@ export interface CreateShiftPayload {
 
 export interface UpdateShiftPayload {
   posteId:       number
-  zoneId?:       number
+  zone?:         string   // IRI : '/api/zones/{id}'
   heureDebut?:   string
   heureFin?:     string
   pauseMinutes?: number

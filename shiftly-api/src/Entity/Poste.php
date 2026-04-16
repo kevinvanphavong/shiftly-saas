@@ -42,7 +42,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
             security: "is_granted('ROLE_MANAGER') and is_granted('DELETE', object)"
         ),
         new Patch(
-            security:               "is_granted('ROLE_MANAGER') and is_granted('DELETE', object)",
+            security:               "is_granted('ROLE_MANAGER')",
             denormalizationContext: ['groups' => ['poste:write']]
         ),
     ]

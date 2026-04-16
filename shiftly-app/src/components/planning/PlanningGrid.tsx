@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   type DragStartEvent, type DragEndEvent,
@@ -43,6 +43,11 @@ export default function PlanningGrid({ data, onAddShift, onEditShift }: Planning
 
   // Ordre local des lignes (drag-to-reorder)
   const [rowOrder, setRowOrder] = useState<number[]>(() => data.employees.map(e => e.id))
+
+  // Resync l'ordre quand on change de semaine (navigation) pour éviter rowOrder obsolète
+  useEffect(() => {
+    setRowOrder(data.employees.map(e => e.id))
+  }, [data.weekStart])
   const orderedEmployees = rowOrder
     .map(id => data.employees.find(e => e.id === id))
     .filter(Boolean) as typeof data.employees

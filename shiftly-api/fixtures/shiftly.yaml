@@ -45,6 +45,8 @@ App\Entity\User:
     points:      60
     actif:       true
     tailleHaut:  "2 polo manches longues, 1 sweat"
+    heuresHebdo: 39
+    typeContrat: "CDI"
 
   user_megane:
     centre:      "@centre_fgc"
@@ -56,6 +58,8 @@ App\Entity\User:
     avatarColor: "#ec4899"
     points:      10
     actif:       true
+    heuresHebdo: 39
+    typeContrat: "CDI"
 
   user_micka:
     centre:      "@centre_fgc"
@@ -67,6 +71,8 @@ App\Entity\User:
     avatarColor: "#8b5cf6"
     points:      10
     actif:       true
+    heuresHebdo: 39
+    typeContrat: "CDI"
 
   user_erwan:
     centre:      "@centre_fgc"
@@ -79,6 +85,8 @@ App\Entity\User:
     points:      35
     actif:       true
     tailleHaut:  "2 tshirts, 1 polo manches courtes"
+    heuresHebdo: 39
+    typeContrat: "CDI"
 
   user_patou:
     centre:      "@centre_fgc"
@@ -91,6 +99,8 @@ App\Entity\User:
     points:      75
     actif:       true
     tailleHaut:  "1 veste sans manche"
+    heuresHebdo: 35
+    typeContrat: "CDI"
 
   user_pol:
     centre:      "@centre_fgc"
@@ -103,6 +113,8 @@ App\Entity\User:
     points:      10
     actif:       true
     tailleHaut:  "1 polo manches longues (new)"
+    heuresHebdo: 35
+    typeContrat: "CDI"
 
   user_cynthia:
     centre:      "@centre_fgc"
@@ -115,6 +127,8 @@ App\Entity\User:
     points:      10
     actif:       true
     tailleHaut:  "2 t-shirts, 2 polaires manches longues"
+    heuresHebdo: 35
+    typeContrat: "CDI"
 
   user_gabin:
     centre:      "@centre_fgc"
@@ -127,6 +141,8 @@ App\Entity\User:
     points:      65
     actif:       true
     tailleHaut:  "1 polo manches longues + 2 polos"
+    heuresHebdo: 25
+    typeContrat: "CDI"
 
   user_aya:
     centre:      "@centre_fgc"
@@ -138,6 +154,8 @@ App\Entity\User:
     avatarColor: "#6366f1"
     points:      50
     actif:       true
+    heuresHebdo: 15
+    typeContrat: "CDD"
 
   user_securite:
     centre:      "@centre_fgc"
@@ -150,6 +168,8 @@ App\Entity\User:
     points:      25
     actif:       true
     tailleHaut:  "Badge"
+    heuresHebdo: 0
+    typeContrat: "EXTRA"
 
   user_hiba:
     centre:      "@centre_fgc"
@@ -161,6 +181,8 @@ App\Entity\User:
     avatarColor: "#ef4444"
     points:      10
     actif:       true
+    heuresHebdo: 15
+    typeContrat: "EXTRA"
 
   user_daniela:
     centre:      "@centre_fgc"
@@ -172,6 +194,8 @@ App\Entity\User:
     avatarColor: "#f472b6"
     points:      10
     actif:       true
+    heuresHebdo: 15
+    typeContrat: "EXTRA"
 
 # ─── Missions Accueil (44) ───────────────────────────────────────────────────
 App\Entity\Mission:
