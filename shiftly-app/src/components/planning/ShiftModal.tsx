@@ -47,8 +47,26 @@ export default function ShiftModal({
       defaultValues: { userId: 0, zoneId: 0, heureDebut: '09:00', heureFin: '17:00', pauseMinutes: 0 },
     })
 
-  const zoneId = watch('zoneId')
-  const userId = watch('userId')
+  const zoneId       = watch('zoneId')
+  const userId       = watch('userId')
+  const heureDebut   = watch('heureDebut')
+  const heureFin     = watch('heureFin')
+  const pauseMinutes = watch('pauseMinutes')
+
+  const durationLabel = (() => {
+    if (!heureDebut || !heureFin) return null
+    const [dh, dm] = heureDebut.split(':').map(Number)
+    const [fh, fm] = heureFin.split(':').map(Number)
+    let mins = (fh * 60 + fm) - (dh * 60 + dm)
+    const crossesMidnight = mins < 0
+    if (crossesMidnight) mins += 1440
+    mins -= (pauseMinutes ?? 0)
+    if (mins <= 0) return null
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    const label = m > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`
+    return { label, crossesMidnight }
+  })()
 
   useEffect(() => {
     if (open) {
@@ -153,6 +171,13 @@ export default function ShiftModal({
 
               {/* Horaires */}
               <TimeRangePicker register={register} errors={errors} />
+              {/* Durée calculée — gestion passage minuit */}
+              {durationLabel && (
+                <p className="-mt-2 text-[12px] text-[var(--muted)]">
+                  {durationLabel.crossesMidnight && '🌙 '}
+                  Durée : <span className="font-semibold text-[var(--text)]">{durationLabel.label}</span>
+                </p>
+              )}
 
               {/* Actions */}
               <div className="flex gap-2 pt-1">

@@ -107,7 +107,7 @@ export default function IncidentsReglagesPage() {
           </button>
         </div>
 
-        <h1 className="font-syne font-extrabold text-[20px] text-text mb-0.5">Incidents</h1>
+        <h1 className="font-syne font-extrabold text-[20px] text-text mb-0.5">Gestion des incidents</h1>
         <p className="text-[12px] text-muted mb-4">{incidents.length} au total</p>
 
         {/* Filtre par statut */}
