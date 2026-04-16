@@ -10,7 +10,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[IsGranted('ROLE_MANAGER')]
 #[Route('/api/planning', name: 'planning_')]
 class PlanningController extends AbstractController
 {
@@ -24,6 +23,7 @@ class PlanningController extends AbstractController
      * Retourne les données complètes d'une semaine de planning.
      */
     #[Route('/week', name: 'week', methods: ['GET'])]
+    #[IsGranted('ROLE_MANAGER')]
     public function week(Request $request): JsonResponse
     {
         $centreId  = (int) $request->query->get('centreId', 0);
@@ -54,10 +54,97 @@ class PlanningController extends AbstractController
     }
 
     /**
+     * POST /api/planning/publish
+     * Body : { "weekStart": "2026-04-13" }
+     * Publie la semaine — crée ou met à jour PlanningWeek → PUBLIE.
+     */
+    #[Route('/publish', name: 'publish', methods: ['POST'])]
+    #[IsGranted('ROLE_MANAGER')]
+    public function publish(Request $request): JsonResponse
+    {
+        $body      = json_decode($request->getContent(), true);
+        $weekParam = $body['weekStart'] ?? '';
+
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        $centre      = $currentUser->getCentre();
+
+        if (!$centre) {
+            return $this->json(['error' => 'Centre introuvable'], 404);
+        }
+
+        $weekStart = $this->resolveMonday($weekParam);
+        $pw        = $this->planningService->publishWeek($centre, $weekStart, $currentUser);
+
+        return $this->json([
+            'weekStart'   => $pw->getWeekStart()->format('Y-m-d'),
+            'statut'      => $pw->getStatut(),
+            'publishedAt' => $pw->getPublishedAt()?->format(\DATE_ATOM),
+        ]);
+    }
+
+    /**
+     * POST /api/planning/duplicate
+     * Body : { "sourceWeekStart": "2026-04-13", "targetWeekStart": "2026-04-20" }
+     * Duplique les postes d'une semaine source vers une semaine cible.
+     */
+    #[Route('/duplicate', name: 'duplicate', methods: ['POST'])]
+    #[IsGranted('ROLE_MANAGER')]
+    public function duplicate(Request $request): JsonResponse
+    {
+        $body   = json_decode($request->getContent(), true);
+        $source = $body['sourceWeekStart'] ?? '';
+        $target = $body['targetWeekStart'] ?? '';
+
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        $centre      = $currentUser->getCentre();
+
+        if (!$centre) {
+            return $this->json(['error' => 'Centre introuvable'], 404);
+        }
+
+        $sourceWeek = $this->resolveMonday($source);
+        $targetWeek = $this->resolveMonday($target);
+
+        if ($sourceWeek->format('Y-m-d') === $targetWeek->format('Y-m-d')) {
+            return $this->json(['error' => 'Les semaines source et cible doivent être différentes.'], 400);
+        }
+
+        try {
+            $this->planningService->duplicateWeek($centre, $sourceWeek, $targetWeek);
+        } catch (\RuntimeException $e) {
+            return $this->json(['error' => $e->getMessage()], 409);
+        }
+
+        return $this->json([
+            'targetWeekStart' => $targetWeek->format('Y-m-d'),
+            'message'         => 'Semaine dupliquée avec succès.',
+        ]);
+    }
+
+    /**
+     * GET /api/planning/employee
+     * Vue employé : semaine en cours + 2 prochaines semaines publiées.
+     * Accessible à tous les utilisateurs connectés (ROLE_USER).
+     */
+    #[Route('/employee', name: 'employee', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function employee(): JsonResponse
+    {
+        /** @var \App\Entity\User $currentUser */
+        $currentUser = $this->getUser();
+        $data        = $this->planningService->getEmployeeWeeks($currentUser);
+
+        return $this->json($data);
+    }
+
+    /**
      * GET /api/planning/alerts?centreId={id}&weekStart=YYYY-MM-DD
      * Retourne uniquement les alertes de la semaine.
      */
     #[Route('/alerts', name: 'alerts', methods: ['GET'])]
+    #[IsGranted('ROLE_MANAGER')]
     public function alerts(Request $request): JsonResponse
     {
         $centreId  = (int) $request->query->get('centreId', 0);

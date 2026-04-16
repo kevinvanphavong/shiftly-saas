@@ -5,6 +5,8 @@ namespace App\Service;
 use App\Entity\Centre;
 use App\Entity\Poste;
 use App\Entity\PlanningWeek;
+use App\Entity\Service;
+use App\Entity\User;
 use App\Repository\PlanningWeekRepository;
 use App\Repository\ServiceRepository;
 use App\Repository\ZoneRepository;
@@ -171,6 +173,162 @@ class PlanningService
                 'sousPlanifies'     => $sousPlanifies,
             ],
         ];
+    }
+
+    /**
+     * Publie une semaine de planning — crée ou met à jour PlanningWeek → PUBLIE.
+     */
+    public function publishWeek(Centre $centre, \DateTimeImmutable $weekStart, User $publisher): PlanningWeek
+    {
+        $centreId = $centre->getId();
+        $pw       = $this->planningWeekRepository->findByCentreAndWeek($centreId, $weekStart);
+
+        if (!$pw) {
+            $pw = new PlanningWeek();
+            $pw->setCentre($centre);
+            $pw->setWeekStart($weekStart);
+            $this->em->persist($pw);
+        }
+
+        $pw->setStatut(PlanningWeek::STATUT_PUBLIE);
+        $pw->setPublishedAt(new \DateTimeImmutable());
+        $pw->setPublishedBy($publisher);
+        $this->em->flush();
+
+        return $pw;
+    }
+
+    /**
+     * Duplique tous les postes d'une semaine source vers une semaine cible.
+     * Crée les services cibles si absents. Lève une exception si postes déjà présents.
+     */
+    public function duplicateWeek(Centre $centre, \DateTimeImmutable $source, \DateTimeImmutable $target): void
+    {
+        $centreId  = $centre->getId();
+        $sourceEnd = $source->modify('+6 days');
+        $targetEnd = $target->modify('+6 days');
+
+        // Vérifie qu'aucun poste n'existe sur la semaine cible
+        $targetServices = $this->serviceRepository->findBetween($centreId, $target, $targetEnd);
+        foreach ($targetServices as $ts) {
+            if (count($ts->getPostes()) > 0) {
+                throw new \RuntimeException('Des postes existent déjà sur la semaine cible.');
+            }
+        }
+
+        $sourceServices = $this->serviceRepository->findBetween($centreId, $source, $sourceEnd);
+
+        foreach ($sourceServices as $srcService) {
+            $srcPostes = $this->em->createQueryBuilder()
+                ->select('p', 'u', 'z')
+                ->from(Poste::class, 'p')
+                ->leftJoin('p.user', 'u')
+                ->leftJoin('p.zone', 'z')
+                ->andWhere('p.service = :service')
+                ->setParameter('service', $srcService)
+                ->getQuery()->getResult();
+
+            if (empty($srcPostes)) {
+                continue;
+            }
+
+            // Calcule la date cible (décalage = target - source en jours)
+            $srcDate  = $srcService->getDate();
+            $diffDays = (int) $source->diff($target)->days;
+            $tgtDate  = $srcDate->modify("+{$diffDays} days");
+
+            // Trouve ou crée le service cible
+            $tgtService = $this->em->getRepository(Service::class)->findOneBy([
+                'centre' => $centre,
+                'date'   => $tgtDate,
+            ]);
+
+            if (!$tgtService) {
+                $tgtService = new Service();
+                $tgtService->setCentre($centre);
+                $tgtService->setDate($tgtDate);
+                $tgtService->setStatut('PLANIFIE');
+                $this->em->persist($tgtService);
+            }
+
+            foreach ($srcPostes as $src) {
+                $new = new Poste();
+                $new->setService($tgtService);
+                $new->setZone($src->getZone());
+                $new->setUser($src->getUser());
+                $new->setHeureDebut($src->getHeureDebut());
+                $new->setHeureFin($src->getHeureFin());
+                $new->setPauseMinutes($src->getPauseMinutes());
+                $this->em->persist($new);
+            }
+        }
+
+        $this->em->flush();
+    }
+
+    /**
+     * Retourne la semaine en cours + les 2 prochaines semaines publiées pour un employé.
+     * Conformité IDCC 1790 : prévenance minimum 7 jours.
+     */
+    public function getEmployeeWeeks(User $user): array
+    {
+        $centre   = $user->getCentre();
+        $centreId = $centre->getId();
+        $today    = new \DateTimeImmutable('today');
+
+        // Lundi de la semaine courante
+        $dayOfWeek   = (int) $today->format('N');
+        $currentWeek = $dayOfWeek === 1 ? $today : $today->modify('-' . ($dayOfWeek - 1) . ' days');
+
+        // Cherche les 4 prochaines semaines publiées (on en prend 3 max)
+        $from    = $currentWeek;
+        $to      = $currentWeek->modify('+4 weeks');
+        $pubList = $this->planningWeekRepository->findPublishedBetween($centreId, $from, $to);
+
+        $result = [];
+        foreach (array_slice($pubList, 0, 3) as $pw) {
+            $wStart  = $pw->getWeekStart();
+            $wEnd    = $wStart->modify('+6 days');
+            $services = $this->serviceRepository->findBetween($centreId, $wStart, $wEnd);
+
+            $shifts = [];
+            $total  = 0.0;
+
+            foreach ($services as $service) {
+                $postes = $this->em->createQueryBuilder()
+                    ->select('p', 'z')
+                    ->from(Poste::class, 'p')
+                    ->leftJoin('p.zone', 'z')
+                    ->andWhere('p.service = :service')
+                    ->andWhere('p.user = :user')
+                    ->setParameter('service', $service)
+                    ->setParameter('user', $user)
+                    ->getQuery()->getResult();
+
+                foreach ($postes as $poste) {
+                    $duree    = $this->calculateShiftDuration($poste);
+                    $total   += $duree;
+                    $shifts[] = [
+                        'date'         => $service->getDate()->format('Y-m-d'),
+                        'zoneNom'      => $poste->getZone()->getNom(),
+                        'zoneCouleur'  => $poste->getZone()->getCouleur() ?? '#6b7280',
+                        'heureDebut'   => $poste->getHeureDebut()?->format('H:i'),
+                        'heureFin'     => $poste->getHeureFin()?->format('H:i'),
+                        'pauseMinutes' => $poste->getPauseMinutes(),
+                    ];
+                }
+            }
+
+            $result[] = [
+                'weekStart'   => $wStart->format('Y-m-d'),
+                'weekEnd'     => $wEnd->format('Y-m-d'),
+                'statut'      => PlanningWeek::STATUT_PUBLIE,
+                'shifts'      => $shifts,
+                'totalHeures' => round($total, 2),
+            ];
+        }
+
+        return ['weeks' => $result];
     }
 
     /**

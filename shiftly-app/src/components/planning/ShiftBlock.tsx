@@ -4,11 +4,12 @@ import type { PlanningShift } from '@/types/planning'
 import { hexAlpha } from '@/lib/colors'
 
 interface ShiftBlockProps {
-  shift: PlanningShift
+  shift:   PlanningShift
+  onClick: (shift: PlanningShift) => void
 }
 
 /** Bloc coloré représentant un shift dans la grille planning */
-export default function ShiftBlock({ shift }: ShiftBlockProps) {
+export default function ShiftBlock({ shift, onClick }: ShiftBlockProps) {
   const couleur = shift.zoneCouleur
 
   const heures = shift.heureDebut && shift.heureFin
@@ -17,7 +18,11 @@ export default function ShiftBlock({ shift }: ShiftBlockProps) {
 
   return (
     <div
-      className="mb-1 cursor-pointer rounded-md px-2 py-1 text-xs transition-opacity hover:opacity-80"
+      role="button"
+      tabIndex={0}
+      onClick={() => onClick(shift)}
+      onKeyDown={e => e.key === 'Enter' && onClick(shift)}
+      className="mb-1 cursor-pointer rounded-md px-2 py-1 text-xs transition-opacity hover:opacity-80 focus:outline-none focus:ring-1"
       style={{
         backgroundColor: hexAlpha(couleur, 0.15),
         borderLeft:      `3px solid ${couleur}`,
@@ -25,7 +30,7 @@ export default function ShiftBlock({ shift }: ShiftBlockProps) {
       }}
       title={`${shift.zoneNom} · ${heures}${shift.pauseMinutes ? ` · pause ${shift.pauseMinutes}min` : ''}`}
     >
-      <p className="font-semibold leading-tight truncate">{shift.zoneNom}</p>
+      <p className="truncate font-semibold leading-tight">{shift.zoneNom}</p>
       <p className="leading-tight opacity-80">{heures}</p>
     </div>
   )

@@ -103,7 +103,7 @@ export interface EmployeePlanningData {
 // ─── Payloads mutations ───────────────────────────────────────────────────────
 
 export interface CreateShiftPayload {
-  serviceId:     number
+  date:          string       // 'YYYY-MM-DD' — le controller crée le service si absent
   zoneId:        number
   userId:        number
   heureDebut:    string       // 'HH:mm'

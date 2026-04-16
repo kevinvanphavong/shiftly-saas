@@ -11,12 +11,13 @@ export type NavItem = {
 
 export const ALL_NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard',       icon: '⚡', managerOnly: true,  showOnMobile: true,  mobileOrder: 0 },
-  { href: '/service',   label: 'Service du jour', icon: '📋', managerOnly: false, showOnMobile: true,  mobileOrder: 1 },
-  { href: '/services',  label: 'Services',        icon: '📅', managerOnly: true,  showOnMobile: true,  mobileOrder: 1 },
-  { href: '/postes',    label: 'Postes',          icon: '🗂️', managerOnly: false, showOnMobile: true,  mobileOrder: 2 },
-  { href: '/staff',     label: 'Staff',           icon: '👥', managerOnly: false, showOnMobile: true,  mobileOrder: 3 },
-  { href: '/tutoriels', label: 'Tutoriels',       icon: '📖', managerOnly: false, showOnMobile: true,  mobileOrder: 4 },
-  { href: '/reglages',  label: 'Réglages',        icon: '⚙️', managerOnly: false, showOnMobile: true,  mobileOrder: 5 },
+  { href: '/planning',  label: 'Planning',         icon: '📅', managerOnly: false, showOnMobile: true,  mobileOrder: 1 },
+  { href: '/service',   label: 'Service du jour', icon: '📋', managerOnly: false, showOnMobile: true,  mobileOrder: 2 },
+  { href: '/services',  label: 'Services',         icon: '🗓️', managerOnly: true,  showOnMobile: true,  mobileOrder: 3 },
+  { href: '/postes',    label: 'Postes',           icon: '🗂️', managerOnly: false, showOnMobile: true,  mobileOrder: 4 },
+  { href: '/staff',     label: 'Staff',            icon: '👥', managerOnly: false, showOnMobile: true,  mobileOrder: 5 },
+  { href: '/tutoriels', label: 'Tutoriels',        icon: '📖', managerOnly: false, showOnMobile: true,  mobileOrder: 6 },
+  { href: '/reglages',  label: 'Réglages',         icon: '⚙️', managerOnly: false, showOnMobile: true,  mobileOrder: 7 },
 ]
 
 export const DESKTOP_NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS
