@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use App\Repository\PosteRepository;
@@ -40,6 +41,10 @@ use Symfony\Component\Serializer\Attribute\Groups;
         new Delete(
             security: "is_granted('ROLE_MANAGER') and is_granted('DELETE', object)"
         ),
+        new Patch(
+            security:               "is_granted('ROLE_MANAGER') and is_granted('DELETE', object)",
+            denormalizationContext: ['groups' => ['poste:write']]
+        ),
     ]
 )]
 #[ApiFilter(SearchFilter::class, properties: [
@@ -68,6 +73,21 @@ class Poste
     #[Groups(['poste:read', 'poste:write'])]
     private ?User $user = null;
 
+    /** Heure de début du shift (null si non planifié) */
+    #[ORM\Column(type: 'time_immutable', nullable: true)]
+    #[Groups(['poste:read', 'poste:write'])]
+    private ?\DateTimeImmutable $heureDebut = null;
+
+    /** Heure de fin du shift (null si non planifié) */
+    #[ORM\Column(type: 'time_immutable', nullable: true)]
+    #[Groups(['poste:read', 'poste:write'])]
+    private ?\DateTimeImmutable $heureFin = null;
+
+    /** Durée de pause en minutes */
+    #[ORM\Column(options: ['default' => 0])]
+    #[Groups(['poste:read', 'poste:write'])]
+    private int $pauseMinutes = 0;
+
     /** Completions — dans l'item seulement */
     #[ORM\OneToMany(mappedBy: 'poste', targetEntity: Completion::class, cascade: ['remove'])]
     #[Groups(['poste:item:read'])]
@@ -91,5 +111,13 @@ class Poste
     public function setZone(?Zone $z): static { $this->zone = $z; return $this; }
     public function getUser(): ?User { return $this->user; }
     public function setUser(?User $u): static { $this->user = $u; return $this; }
+
+    public function getHeureDebut(): ?\DateTimeImmutable { return $this->heureDebut; }
+    public function setHeureDebut(?\DateTimeImmutable $h): static { $this->heureDebut = $h; return $this; }
+    public function getHeureFin(): ?\DateTimeImmutable { return $this->heureFin; }
+    public function setHeureFin(?\DateTimeImmutable $h): static { $this->heureFin = $h; return $this; }
+    public function getPauseMinutes(): int { return $this->pauseMinutes; }
+    public function setPauseMinutes(int $p): static { $this->pauseMinutes = $p; return $this; }
+
     public function getCompletions(): Collection { return $this->completions; }
 }

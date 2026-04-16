@@ -131,6 +131,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:write'])]
     private bool $actif = true;
 
+    /** Heures contractuelles par semaine */
+    #[ORM\Column(nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?int $heuresHebdo = null;
+
+    /** Type de contrat : CDI, CDD, EXTRA, ALTERNANCE, STAGE */
+    #[ORM\Column(length: 30, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $typeContrat = null;
+
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: StaffCompetence::class, cascade: ['remove'])]
     private Collection $staffCompetences;
 
@@ -169,6 +179,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPointure(?string $p): static { $this->pointure = $p; return $this; }
     public function isActif(): bool { return $this->actif; }
     public function setActif(bool $actif): static { $this->actif = $actif; return $this; }
+    public function getHeuresHebdo(): ?int { return $this->heuresHebdo; }
+    public function setHeuresHebdo(?int $h): static { $this->heuresHebdo = $h; return $this; }
+    public function getTypeContrat(): ?string { return $this->typeContrat; }
+    public function setTypeContrat(?string $t): static { $this->typeContrat = $t; return $this; }
     public function getStaffCompetences(): Collection { return $this->staffCompetences; }
     public function getTutoReads(): Collection { return $this->tutoReads; }
 
