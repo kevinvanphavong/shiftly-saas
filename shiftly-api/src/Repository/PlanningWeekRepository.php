@@ -35,8 +35,8 @@ class PlanningWeekRepository extends ServiceEntityRepository
             ->andWhere('pw.weekStart BETWEEN :from AND :to')
             ->setParameter('centreId', $centreId)
             ->setParameter('statut', PlanningWeek::STATUT_PUBLIE)
-            ->setParameter('from', $from)
-            ->setParameter('to', $to)
+            ->setParameter('from', $from, Types::DATE_IMMUTABLE)
+            ->setParameter('to', $to, Types::DATE_IMMUTABLE)
             ->orderBy('pw.weekStart', 'ASC')
             ->getQuery()
             ->getResult();
