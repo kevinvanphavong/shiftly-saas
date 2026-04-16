@@ -13,7 +13,7 @@ import ZoneSelector from './ZoneSelector'
 import TimeRangePicker from './TimeRangePicker'
 
 const schema = z.object({
-  userId:       z.number().min(1, 'Employé requis'),
+  userId:       z.number().min(0),
   zoneId:       z.number().min(1, 'Zone requise'),
   heureDebut:   z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:mm requis'),
   heureFin:     z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:mm requis'),
@@ -23,15 +23,18 @@ const schema = z.object({
 export type ShiftFormValues = z.infer<typeof schema>
 
 interface ShiftModalProps {
-  open:     boolean
-  onClose:  () => void
-  zones:    PlanningZone[]
-  date:     string               // 'YYYY-MM-DD'
-  shift?:   PlanningShift | null // null = création, défini = édition
+  open:              boolean
+  onClose:           () => void
+  zones:             PlanningZone[]
+  date:              string               // 'YYYY-MM-DD'
+  shift?:            PlanningShift | null // null = création, défini = édition
+  defaultEmployeeId?: number              // pré-sélectionne l'employé en création
 }
 
 /** Modal bottom-sheet création / édition d'un shift */
-export default function ShiftModal({ open, onClose, zones, date, shift }: ShiftModalProps) {
+export default function ShiftModal({
+  open, onClose, zones, date, shift, defaultEmployeeId,
+}: ShiftModalProps) {
   const { data: staffData } = useStaff()
   const createShift  = useCreateShift()
   const updateShift  = useUpdateShift()
@@ -44,23 +47,49 @@ export default function ShiftModal({ open, onClose, zones, date, shift }: ShiftM
       defaultValues: { userId: 0, zoneId: 0, heureDebut: '09:00', heureFin: '17:00', pauseMinutes: 0 },
     })
 
-  const zoneId  = watch('zoneId')
-  const userId  = watch('userId')
+  const zoneId = watch('zoneId')
+  const userId = watch('userId')
 
   useEffect(() => {
     if (open) {
       reset(isEdit
-        ? { userId: 0, zoneId: shift.zoneId, heureDebut: shift.heureDebut ?? '09:00', heureFin: shift.heureFin ?? '17:00', pauseMinutes: shift.pauseMinutes }
-        : { userId: 0, zoneId: 0, heureDebut: '09:00', heureFin: '17:00', pauseMinutes: 0 }
+        ? {
+            userId:       shift.userId,
+            zoneId:       shift.zoneId,
+            heureDebut:   shift.heureDebut ?? '09:00',
+            heureFin:     shift.heureFin   ?? '17:00',
+            pauseMinutes: shift.pauseMinutes,
+          }
+        : {
+            userId:       defaultEmployeeId ?? 0,
+            zoneId:       0,
+            heureDebut:   '09:00',
+            heureFin:     '17:00',
+            pauseMinutes: 0,
+          }
       )
     }
-  }, [open, isEdit, shift, reset])
+  }, [open, isEdit, shift, reset, defaultEmployeeId])
 
   async function onSubmit(values: ShiftFormValues) {
     if (isEdit && shift) {
-      await updateShift.mutateAsync({ posteId: shift.posteId, zoneId: values.zoneId, heureDebut: values.heureDebut, heureFin: values.heureFin, pauseMinutes: values.pauseMinutes })
+      await updateShift.mutateAsync({
+        posteId:      shift.posteId,
+        zoneId:       values.zoneId,
+        heureDebut:   values.heureDebut,
+        heureFin:     values.heureFin,
+        pauseMinutes: values.pauseMinutes,
+      })
     } else {
-      await createShift.mutateAsync({ date, userId: values.userId, zoneId: values.zoneId, heureDebut: values.heureDebut, heureFin: values.heureFin, pauseMinutes: values.pauseMinutes })
+      if (!values.userId) return // sécurité : employé requis en création
+      await createShift.mutateAsync({
+        date,
+        userId:       values.userId,
+        zoneId:       values.zoneId,
+        heureDebut:   values.heureDebut,
+        heureFin:     values.heureFin,
+        pauseMinutes: values.pauseMinutes,
+      })
     }
     onClose()
   }
@@ -73,7 +102,8 @@ export default function ShiftModal({ open, onClose, zones, date, shift }: ShiftM
   }
 
   const members = staffData?.members ?? []
-  const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const fmt = (d: string) =>
+    new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
     <AnimatePresence>
@@ -92,10 +122,18 @@ export default function ShiftModal({ open, onClose, zones, date, shift }: ShiftM
             <p className="mb-4 text-[12px] text-[var(--muted)]">{fmt(date)}</p>
 
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              {/* Employé — masqué en édition */}
-              {!isEdit && (
-                <div>
-                  <label className="mb-[5px] block text-[10px] font-bold uppercase tracking-[0.8px] text-[var(--muted)]">Employé</label>
+              {/* Employé — affiché en création et en édition (lecture seule si édition) */}
+              <div>
+                <label className="mb-[5px] block text-[10px] font-bold uppercase tracking-[0.8px] text-[var(--muted)]">
+                  Employé
+                </label>
+                {isEdit ? (
+                  <p className="rounded-[10px] border border-[var(--border)] bg-[var(--surface2)] px-3 py-[10px] text-[13px] text-[var(--muted)]">
+                    {members.find(m => m.id === shift?.userId)
+                      ? (() => { const m = members.find(m => m.id === shift?.userId)!; return m.prenom ? `${m.prenom} ${m.nom}` : m.nom })()
+                      : 'Employé'}
+                  </p>
+                ) : (
                   <select value={userId} onChange={e => setValue('userId', +e.target.value)}
                     className="w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface2)] px-3 py-[10px] text-[13px] text-[var(--text)] outline-none focus:border-[var(--accent)]">
                     <option value={0}>Choisir un employé…</option>
@@ -103,9 +141,8 @@ export default function ShiftModal({ open, onClose, zones, date, shift }: ShiftM
                       <option key={m.id} value={m.id}>{m.prenom ? `${m.prenom} ${m.nom}` : m.nom}</option>
                     ))}
                   </select>
-                  {errors.userId && <p className="mt-1 text-[10px] text-[var(--red)]">{errors.userId.message}</p>}
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Zone */}
               <div>

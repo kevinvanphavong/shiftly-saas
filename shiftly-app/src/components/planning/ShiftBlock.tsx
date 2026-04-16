@@ -1,5 +1,6 @@
 'use client'
 
+import { useDraggable } from '@dnd-kit/core'
 import type { PlanningShift } from '@/types/planning'
 import { hexAlpha } from '@/lib/colors'
 
@@ -8,30 +9,41 @@ interface ShiftBlockProps {
   onClick: (shift: PlanningShift) => void
 }
 
-/** Bloc coloré représentant un shift dans la grille planning */
+/** Bloc coloré représentant un shift — draggable */
 export default function ShiftBlock({ shift, onClick }: ShiftBlockProps) {
-  const couleur = shift.zoneCouleur
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id:   `shift-${shift.posteId}`,
+    data: { type: 'shift', shift },
+  })
 
-  const heures = shift.heureDebut && shift.heureFin
+  const couleur = shift.zoneCouleur
+  const heures  = shift.heureDebut && shift.heureFin
     ? `${shift.heureDebut} – ${shift.heureFin}`
     : '—'
 
   return (
     <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       role="button"
       tabIndex={0}
-      onClick={() => onClick(shift)}
+      onClick={e => { e.stopPropagation(); onClick(shift) }}
       onKeyDown={e => e.key === 'Enter' && onClick(shift)}
-      className="mb-1 cursor-pointer rounded-md px-2 py-1 text-xs transition-opacity hover:opacity-80 focus:outline-none focus:ring-1"
+      className="mb-1 cursor-grab rounded-md px-2 py-1.5 text-xs transition-all active:cursor-grabbing focus:outline-none"
       style={{
-        backgroundColor: hexAlpha(couleur, 0.15),
+        backgroundColor: hexAlpha(couleur, 0.12),
         borderLeft:      `3px solid ${couleur}`,
         color:           couleur,
+        opacity:         isDragging ? 0.35 : 1,
+        transform:       isDragging ? 'none' : undefined,
       }}
-      title={`${shift.zoneNom} · ${heures}${shift.pauseMinutes ? ` · pause ${shift.pauseMinutes}min` : ''}`}
     >
-      <p className="truncate font-semibold leading-tight">{shift.zoneNom}</p>
-      <p className="leading-tight opacity-80">{heures}</p>
+      <p className="truncate font-bold leading-tight">{heures}</p>
+      <p className="mt-0.5 truncate text-[10px] leading-tight opacity-80">{shift.zoneNom}</p>
+      {shift.pauseMinutes > 0 && (
+        <p className="mt-0.5 text-[9px] opacity-60">{shift.pauseMinutes}min pause</p>
+      )}
     </div>
   )
 }

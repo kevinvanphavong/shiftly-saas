@@ -11,6 +11,7 @@ import type {
   UpdateShiftPayload,
   PublishWeekPayload,
   DuplicateWeekPayload,
+  MoveShiftPayload,
 } from '@/types/planning'
 
 // ─── Planning hebdo (vue Manager) ────────────────────────────────────────────
@@ -116,6 +117,32 @@ export function usePublishWeek() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
       queryClient.invalidateQueries({ queryKey: ['planning', 'employee'] })
+    },
+  })
+}
+
+// ─── Déplacer un shift (drag & drop inter-jours) ─────────────────────────────
+
+export function useMoveShift() {
+  const centreId    = useAuthStore(s => s.centreId)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ shift, newDate }: MoveShiftPayload) => {
+      // Supprime l'ancien poste puis recrée sur la nouvelle date
+      await api.delete(`/postes/${shift.posteId}`)
+      return api.post('/postes/create', {
+        date:         newDate,
+        userId:       shift.userId,
+        zoneId:       shift.zoneId,
+        heureDebut:   shift.heureDebut,
+        heureFin:     shift.heureFin,
+        pauseMinutes: shift.pauseMinutes,
+      }).then(r => r.data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
+      queryClient.invalidateQueries({ queryKey: ['planning', 'alerts', centreId] })
     },
   })
 }

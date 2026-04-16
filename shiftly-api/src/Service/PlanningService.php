@@ -116,6 +116,7 @@ class PlanningService
                 $employeesMap[$userId]['shifts'][] = [
                     'posteId'      => $poste->getId(),
                     'serviceId'    => $poste->getService()->getId(),
+                    'userId'       => $userId,
                     'date'         => $dateStr,
                     'zoneId'       => $zone->getId(),
                     'zoneNom'      => $zone->getNom(),

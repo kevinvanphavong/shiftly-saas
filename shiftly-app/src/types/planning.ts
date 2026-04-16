@@ -3,6 +3,7 @@
 export interface PlanningShift {
   posteId:      number
   serviceId:    number
+  userId:       number        // nécessaire pour le déplacement de shift (drag & drop)
   date:         string        // 'YYYY-MM-DD'
   zoneId:       number
   zoneNom:      string
@@ -10,6 +11,11 @@ export interface PlanningShift {
   heureDebut:   string | null // 'HH:mm'
   heureFin:     string | null // 'HH:mm'
   pauseMinutes: number
+}
+
+export interface MoveShiftPayload {
+  shift:   PlanningShift  // shift source
+  newDate: string         // 'YYYY-MM-DD' cible
 }
 
 // ─── Employé dans le planning ─────────────────────────────────────────────────

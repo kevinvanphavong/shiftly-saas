@@ -1,18 +1,39 @@
 'use client'
 
+import { useState } from 'react'
+import {
+  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+  type DragStartEvent, type DragEndEvent,
+} from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import type { PlanningShift, PlanningWeekData } from '@/types/planning'
+import { useMoveShift } from '@/hooks/usePlanning'
+import { hexAlpha } from '@/lib/colors'
 import DayHeader from './DayHeader'
 import PlanningRow from './PlanningRow'
 
 interface PlanningGridProps {
   data:        PlanningWeekData
-  onAddShift:  (date: string) => void
+  onAddShift:  (date: string, employeeId: number) => void
   onEditShift: (shift: PlanningShift) => void
 }
 
-/** Grille planning — en-têtes des jours + lignes employés */
+/** Aperçu du shift pendant le drag */
+function ShiftPreview({ shift }: { shift: PlanningShift }) {
+  const heures = shift.heureDebut && shift.heureFin ? `${shift.heureDebut} – ${shift.heureFin}` : '—'
+  return (
+    <div className="w-[120px] rounded-md px-2 py-1.5 text-xs shadow-xl"
+      style={{ backgroundColor: hexAlpha(shift.zoneCouleur, 0.15), borderLeft: `3px solid ${shift.zoneCouleur}`, color: shift.zoneCouleur }}>
+      <p className="truncate font-bold">{heures}</p>
+      <p className="mt-0.5 truncate text-[10px] opacity-80">{shift.zoneNom}</p>
+    </div>
+  )
+}
+
+/** Grille planning complète avec DnD shifts + tri des lignes */
 export default function PlanningGrid({ data, onAddShift, onEditShift }: PlanningGridProps) {
-  const today = new Date().toISOString().split('T')[0]
+  const today    = new Date().toISOString().split('T')[0]
+  const moveShift = useMoveShift()
 
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(data.weekStart + 'T12:00:00')
@@ -20,35 +41,108 @@ export default function PlanningGrid({ data, onAddShift, onEditShift }: Planning
     return d.toISOString().split('T')[0]
   })
 
+  // Ordre local des lignes (drag-to-reorder)
+  const [rowOrder, setRowOrder] = useState<number[]>(() => data.employees.map(e => e.id))
+  const orderedEmployees = rowOrder
+    .map(id => data.employees.find(e => e.id === id))
+    .filter(Boolean) as typeof data.employees
+
+  // État DnD actif
+  const [activeShift, setActiveShift]   = useState<PlanningShift | null>(null)
+  const [isDraggingRow, setIsDraggingRow] = useState(false)
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+
+  function handleDragStart(event: DragStartEvent) {
+    const { type, shift } = event.active.data.current ?? {}
+    if (type === 'shift') { setActiveShift(shift); setIsDraggingRow(false) }
+    if (type === 'row')   { setIsDraggingRow(true); setActiveShift(null) }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveShift(null)
+    setIsDraggingRow(false)
+
+    if (!over) return
+
+    const activeType = active.data.current?.type
+    const overId     = String(over.id)
+
+    // ── Shift déplacé vers une nouvelle cellule ──
+    if (activeType === 'shift') {
+      const shift: PlanningShift = active.data.current?.shift
+      if (overId.startsWith('drop-') && shift) {
+        const newDate = overId.split('-').slice(2, 5).join('-') // drop-{empId}-{YYYY-MM-DD}
+        if (newDate !== shift.date) {
+          moveShift.mutate({ shift, newDate })
+        }
+      }
+      return
+    }
+
+    // ── Ligne réordonnée ──
+    if (activeType === 'row') {
+      const activeRowId = active.data.current?.employeeId as number
+      const overRowId   = over.data.current?.employeeId as number
+      if (activeRowId && overRowId && activeRowId !== overRowId) {
+        setRowOrder(prev => {
+          const oldIdx = prev.indexOf(activeRowId)
+          const newIdx = prev.indexOf(overRowId)
+          return arrayMove(prev, oldIdx, newIdx)
+        })
+      }
+    }
+  }
+
+  if (data.employees.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-[var(--muted)]">
+        <p className="text-3xl">📋</p>
+        <p className="mt-2 text-sm">Aucun employé planifié cette semaine</p>
+      </div>
+    )
+  }
+
+  const rowIds = rowOrder.map(id => `row-${id}`)
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-      {/* En-tête */}
-      <div className="flex min-w-[700px] border-b border-[var(--border)] bg-[var(--surface2)]">
-        <div className="w-[140px] shrink-0 px-3 py-2 md:w-[180px]" />
-        {weekDates.map(date => (
-          <div key={date} className="flex-1 border-l border-[var(--border)]">
-            <DayHeader date={date} isToday={date === today} />
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+        {/* En-tête sticky */}
+        <div className="flex border-b border-[var(--border)] bg-[var(--surface)]" style={{ minWidth: 1040, position: 'sticky', top: 0, zIndex: 10 }}>
+          <div className="flex w-[200px] shrink-0 items-center border-r border-[var(--border)] px-4 py-3">
+            <span className="text-[13px] font-bold text-[var(--text)]">Employés</span>
           </div>
-        ))}
-        <div className="w-[80px] shrink-0 border-l border-[var(--border)] px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-          Total
+          {weekDates.map(date => (
+            <div key={date} className="flex-1 border-l border-[var(--border)]" style={{ minWidth: 120 }}>
+              <DayHeader date={date} isToday={date === today} />
+            </div>
+          ))}
+        </div>
+
+        {/* Lignes employés */}
+        <div style={{ minWidth: 1040 }}>
+          <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
+            {orderedEmployees.map(emp => (
+              <PlanningRow
+                key={emp.id}
+                employee={emp}
+                weekDates={weekDates}
+                today={today}
+                isDraggingRow={isDraggingRow}
+                onAddShift={onAddShift}
+                onEditShift={onEditShift}
+              />
+            ))}
+          </SortableContext>
         </div>
       </div>
 
-      {/* Corps */}
-      <div className="min-w-[700px]">
-        {data.employees.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-[var(--muted)]">
-            <p className="text-2xl">📋</p>
-            <p className="mt-2 text-sm">Aucun employé planifié cette semaine</p>
-          </div>
-        ) : (
-          data.employees.map(emp => (
-            <PlanningRow key={emp.id} employee={emp} weekDates={weekDates}
-              onAddShift={onAddShift} onEditShift={onEditShift} />
-          ))
-        )}
-      </div>
-    </div>
+      {/* Aperçu drag shift */}
+      <DragOverlay dropAnimation={null}>
+        {activeShift && <ShiftPreview shift={activeShift} />}
+      </DragOverlay>
+    </DndContext>
   )
 }
