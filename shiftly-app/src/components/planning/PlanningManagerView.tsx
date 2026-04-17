@@ -105,7 +105,7 @@ export default function PlanningManagerView() {
       </div>
 
       {/* ── Navigateur semaine — sticky juste en dessous du header ── */}
-      <div className="sticky top-[73px] z-10">
+      <div className="sticky top-[73px] z-20">
         <WeekNavigator
           weekStart={displayWeekStart}
           weekEnd={weekEnd}
