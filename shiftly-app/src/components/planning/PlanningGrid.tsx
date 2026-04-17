@@ -140,8 +140,8 @@ export default function PlanningGrid({ data, onAddShift, onEditShift }: Planning
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
-        {/* En-tête sticky */}
-        <div className="flex border-b border-[var(--border)] bg-[var(--surface)]" style={{ minWidth: 1040, position: 'sticky', top: 0, zIndex: 10 }}>
+        {/* En-tête sticky — top calculé pour rester sous les deux headers externes */}
+        <div className="flex border-b border-[var(--border)] bg-[var(--surface)]" style={{ minWidth: 1040, position: 'sticky', top: 0, zIndex: 5 }}>
           <div className="flex w-[200px] shrink-0 items-center border-r border-[var(--border)] px-4 py-3">
             <span className="text-[13px] font-bold text-[var(--text)]">Employés</span>
           </div>
