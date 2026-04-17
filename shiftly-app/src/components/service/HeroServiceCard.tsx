@@ -100,7 +100,7 @@ export default function HeroServiceCard({
                 <div key={z.nom} className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 w-[80px] flex-shrink-0">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: z.couleur }} />
-                    <span className="text-[11px] font-bold truncate" style={{ color: z.couleur }}>{z.nom}</span>
+                    <span className="text-[11px] font-syne font-bold truncate" style={{ color: z.couleur }}>{z.nom}</span>
                   </div>
                   <div className="flex-1 h-[5px] bg-surface2 rounded-full overflow-hidden">
                     <div
