@@ -42,7 +42,8 @@ App\Entity\Zone:
 App\Entity\User:
   user_kevin:
     centre:      "@centre_fgc"
-    nom:         "Kévin"
+    nom:         "Vong"
+    prenom:      "Kevin"
     email:       "kevin@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -56,7 +57,8 @@ App\Entity\User:
 
   user_megane:
     centre:      "@centre_fgc"
-    nom:         "Mégane"
+    nom:         "Goueffon"
+    prenom:      "Mégane"
     email:       "megane@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -69,7 +71,8 @@ App\Entity\User:
 
   user_micka:
     centre:      "@centre_fgc"
-    nom:         "Micka"
+    nom:         "Ferreira"
+    prenom:      "Mickael"
     email:       "micka@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -82,7 +85,8 @@ App\Entity\User:
 
   user_erwan:
     centre:      "@centre_fgc"
-    nom:         "Erwan"
+    nom:         "Vallée"
+    prenom:      "Erwan"
     email:       "erwan@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -96,7 +100,8 @@ App\Entity\User:
 
   user_patou:
     centre:      "@centre_fgc"
-    nom:         "Patou"
+    nom:         "Veron"
+    prenom:      "Patrice"
     email:       "patou@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -110,7 +115,8 @@ App\Entity\User:
 
   user_pol:
     centre:      "@centre_fgc"
-    nom:         "Pôl"
+    nom:         "Degrassi"
+    prenom:      "Pôl"
     email:       "pol@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -124,7 +130,8 @@ App\Entity\User:
 
   user_cynthia:
     centre:      "@centre_fgc"
-    nom:         "Cynthia"
+    nom:         "Quari"
+    prenom:      "Cynthia"
     email:       "cynthia@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -138,7 +145,8 @@ App\Entity\User:
 
   user_gabin:
     centre:      "@centre_fgc"
-    nom:         "Gabin"
+    nom:         "Rossignol"
+    prenom:      "Gabin"
     email:       "gabin@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -152,7 +160,8 @@ App\Entity\User:
 
   user_aya:
     centre:      "@centre_fgc"
-    nom:         "Aya"
+    nom:         "Nata"
+    prenom:      "Aya"
     email:       "aya@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -165,7 +174,8 @@ App\Entity\User:
 
   user_securite:
     centre:      "@centre_fgc"
-    nom:         "Agent de sécurité"
+    nom:         "Debdoug"
+    prenom:      "Mohcine"
     email:       "securite@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -179,7 +189,8 @@ App\Entity\User:
 
   user_hiba:
     centre:      "@centre_fgc"
-    nom:         "Hiba"
+    nom:         "Nata"
+    prenom:      "Hiba"
     email:       "hiba@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
@@ -192,7 +203,8 @@ App\Entity\User:
 
   user_daniela:
     centre:      "@centre_fgc"
-    nom:         "Daniela"
+    nom:         "Nata"
+    prenom:      "Daniela"
     email:       "daniela@bowlingcentral.fr"
     password:    "<(password_hash('shiftly2026', PASSWORD_BCRYPT, ['cost' => 12]))>"
     roles:       []
