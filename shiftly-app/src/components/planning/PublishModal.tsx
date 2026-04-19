@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { backdropVariants, sheetVariants } from '@/lib/animations'
 import { usePublishWeek } from '@/hooks/usePlanning'
 import type { PlanningWeekData, PublishWarningResponse } from '@/types/planning'
+import { useToastStore } from '@/store/toastStore'
 import DelaiWarning from './DelaiWarning'
 
 interface PublishModalProps {
@@ -17,7 +18,9 @@ interface PublishModalProps {
 /** Modal de publication avec garde-fou délai de prévenance IDCC 1790 */
 export default function PublishModal({ open, onClose, weekStart, data }: PublishModalProps) {
   const publishWeek = usePublishWeek()
-  const [warning, setWarning] = useState<PublishWarningResponse | null>(null)
+  const [warning, setWarning]  = useState<PublishWarningResponse | null>(null)
+  const showToast              = useToastStore(s => s.show)
+  const isRepublication        = data.statut === 'PUBLIE'
 
   const alertesLegalesHaute = data.alertes.filter(
     a => (a as { categorie?: string }).categorie === 'legal' && a.severite === 'haute'
@@ -28,11 +31,21 @@ export default function PublishModal({ open, onClose, weekStart, data }: Publish
     publishWeek.mutate(
       { weekStart, forcePublication: false },
       {
-        onSuccess: () => onClose(),
+        onSuccess: () => {
+          showToast(
+            isRepublication
+              ? 'Planning republié — le snapshot a été mis à jour'
+              : 'Planning publié — les employés peuvent consulter leur semaine',
+            'success'
+          )
+          onClose()
+        },
         onError: (err: unknown) => {
           const resp = (err as { response?: { data?: unknown; status?: number } })?.response
           if (resp?.status === 422) {
             setWarning(resp.data as PublishWarningResponse)
+          } else {
+            showToast('Erreur lors de la publication, réessaie', 'error')
           }
         },
       }
@@ -43,7 +56,14 @@ export default function PublishModal({ open, onClose, weekStart, data }: Publish
     publishWeek.mutate(
       { weekStart, forcePublication: true, motifModification: motif },
       {
-        onSuccess: () => { setWarning(null); onClose() },
+        onSuccess: () => {
+          showToast('Planning publié hors délai — motif archivé dans le snapshot légal', 'info')
+          setWarning(null)
+          onClose()
+        },
+        onError: () => {
+          showToast('Erreur lors de la publication forcée, réessaie', 'error')
+        },
       }
     )
   }
@@ -83,7 +103,7 @@ export default function PublishModal({ open, onClose, weekStart, data }: Publish
               {/* Titre */}
               <div className="flex items-center justify-between py-3">
                 <h2 className="font-syne text-[16px] font-bold text-[var(--text)]">
-                  Publier le planning
+                  {isRepublication ? 'Republier le planning' : 'Publier le planning'}
                 </h2>
                 <button onClick={handleClose} className="text-[22px] leading-none text-[var(--muted)] hover:text-[var(--text)]">
                   ×
@@ -153,7 +173,7 @@ export default function PublishModal({ open, onClose, weekStart, data }: Publish
                     onClick={handlePublish}
                     className="flex-1 rounded-[14px] bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] py-3.5 text-[14px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {publishWeek.isPending ? '…' : '✓ Confirmer la publication'}
+                    {publishWeek.isPending ? '…' : isRepublication ? '↻ Confirmer la republication' : '✓ Confirmer la publication'}
                   </button>
                 </div>
               )}
