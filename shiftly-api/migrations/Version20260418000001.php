@@ -21,10 +21,9 @@ final class Version20260418000001 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // Détection du driver pour gérer MySQL et SQLite
-        $platform = $this->connection->getDatabasePlatform()->getName();
+        $isSqlite = $this->connection->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\SqlitePlatform;
 
-        if ($platform === 'sqlite') {
+        if ($isSqlite) {
             $this->addSql('CREATE TABLE planning_snapshot (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 centre_id INTEGER NOT NULL,

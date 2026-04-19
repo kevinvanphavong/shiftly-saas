@@ -172,7 +172,7 @@ class PlanningService
         $note         = $planningWeek?->getNote();
 
         // ── Alertes ──
-        $alertes = $this->buildAlerts($employees, $services, $zonesData);
+        $alertes = $this->buildAlerts($employees, $services, $zonesData, $centre, $weekStart);
 
         // ── Stats ──
         $employesPlanifies = count($employees);
@@ -561,7 +561,7 @@ class PlanningService
     /**
      * Génère les alertes métier (ZONE_NON_COUVERTE, SANS_PAUSE) et légales.
      */
-    private function buildAlerts(array $employees, array $services, array $zones): array
+    private function buildAlerts(array $employees, array $services, array $zones, Centre $centre, \DateTimeImmutable $weekStart): array
     {
         $alertes = [];
 
@@ -614,7 +614,7 @@ class PlanningService
         }
 
         // Alertes légales Code du travail
-        $alertes = array_merge($alertes, $this->getLegalAlerts($employees));
+        $alertes = array_merge($alertes, $this->getLegalAlerts($employees, $centre, $weekStart));
 
         // Trie : haute en premier, légal avant métier à sévérité égale
         usort($alertes, function ($a, $b) {
@@ -632,7 +632,7 @@ class PlanningService
      * Alertes : MAX_JOURNALIER, MAX_HEBDO_ABSOLU, MAX_HEBDO_MOYENNE,
      *           REPOS_QUOTIDIEN, REPOS_HEBDO, PAUSE_6H
      */
-    private function getLegalAlerts(array $employees): array
+    private function getLegalAlerts(array $employees, Centre $centre, \DateTimeImmutable $weekStart): array
     {
         $alertes = [];
 
@@ -787,6 +787,68 @@ class PlanningService
                             'userId'     => $emp['id'],
                         ];
                     }
+                }
+            }
+        }
+
+        // ── MAX_HEBDO_MOYENNE : > 44h de moyenne sur 12 semaines glissantes ─
+        // Charge les postes des 11 semaines précédentes en une seule requête DQL
+        $twelveWeeksAgo = $weekStart->modify('-11 weeks');
+        $weekEndCurrent = $weekStart->modify('+6 days');
+
+        $userIds = array_column($employees, 'id');
+        if (!empty($userIds)) {
+            $histoPostes = $this->em->createQueryBuilder()
+                ->select('p', 's', 'u')
+                ->from(Poste::class, 'p')
+                ->join('p.service', 's')
+                ->join('p.user', 'u')
+                ->andWhere('s.centre = :centre')
+                ->andWhere('s.date BETWEEN :from AND :to')
+                ->andWhere('p.user IN (:userIds)')
+                ->setParameter('centre', $centre)
+                ->setParameter('from', $twelveWeeksAgo)
+                ->setParameter('to', $weekEndCurrent)
+                ->getQuery()
+                ->getResult();
+
+            // Indexe les heures histo par userId et par numéro de semaine ISO
+            $heuresParUserSemaine = [];
+            foreach ($histoPostes as $p) {
+                $uid   = $p->getUser()->getId();
+                $wNum  = $p->getService()->getDate()->format('o-W'); // ex: 2026-15
+                $heuresParUserSemaine[$uid][$wNum] = ($heuresParUserSemaine[$uid][$wNum] ?? 0.0)
+                    + $this->calculateShiftDuration($p);
+            }
+
+            foreach ($employees as $emp) {
+                $uid     = $emp['id'];
+                $semaines = $heuresParUserSemaine[$uid] ?? [];
+
+                // Complète la semaine courante si absente de l'historique (pas encore de postes finaux)
+                $currentWNum = $weekStart->format('o-W');
+                if (!isset($semaines[$currentWNum])) {
+                    $semaines[$currentWNum] = $emp['totalHeures'];
+                }
+
+                if (count($semaines) < 2) {
+                    continue; // Pas assez de données pour calculer une moyenne significative
+                }
+
+                $moyenne = array_sum($semaines) / count($semaines);
+
+                if ($moyenne > 44) {
+                    $alertes[] = [
+                        'type'       => 'MAX_HEBDO_MOYENNE',
+                        'severite'   => 'haute',
+                        'categorie'  => 'legal',
+                        'baseLegale' => 'Art. L3121-22 C. travail',
+                        'message'    => sprintf(
+                            '%s : moyenne de %.1fh/semaine sur %d semaines (44h max)',
+                            $emp['nom'], $moyenne, count($semaines)
+                        ),
+                        'userId' => $uid,
+                    ];
                 }
             }
         }
