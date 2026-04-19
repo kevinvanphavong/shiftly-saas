@@ -112,10 +112,9 @@ export default function PlanningManagerView() {
           </button>
           <button
             onClick={() => setPublishOpen(true)}
-            disabled={statut === 'PUBLIE'}
-            className="rounded-lg bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
           >
-            ✓ Publier
+            {statut === 'PUBLIE' ? '↻ Republier' : '✓ Publier'}
           </button>
         </div>
       </div>

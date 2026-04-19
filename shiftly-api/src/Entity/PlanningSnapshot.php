@@ -34,7 +34,7 @@ class PlanningSnapshot
 
     /** Manager qui a publié */
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(name: 'published_by', nullable: false)]
     private ?User $publishedBy = null;
 
     /** Copie intégrale du planning (JSON PlanningWeekData) */
