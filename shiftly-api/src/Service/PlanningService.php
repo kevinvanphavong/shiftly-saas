@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Absence;
 use App\Entity\Centre;
 use App\Entity\Poste;
 use App\Entity\PlanningSnapshot;
@@ -11,6 +12,7 @@ use App\Entity\User;
 use App\Exception\DelaiPrevenanceException;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use App\Repository\AbsenceRepository;
 use App\Repository\PlanningSnapshotRepository;
 use App\Repository\PlanningWeekRepository;
 use App\Repository\ServiceRepository;
@@ -27,6 +29,7 @@ class PlanningService
         private readonly ServiceRepository          $serviceRepository,
         private readonly PlanningWeekRepository      $planningWeekRepository,
         private readonly PlanningSnapshotRepository  $planningSnapshotRepository,
+        private readonly AbsenceRepository           $absenceRepository,
         private readonly ZoneRepository              $zoneRepository,
         private readonly UserRepository              $userRepository,
         private readonly EntityManagerInterface      $em,
@@ -97,11 +100,24 @@ class PlanningService
             'couleur' => $z->getCouleur() ?? '#6b7280',
         ], $zones);
 
+        // ── Charge les absences de la semaine (une requête pour tous les employés) ──
+        $absencesRaw    = $this->absenceRepository->findByCentreAndDateRange($centreId, $weekStart, $weekEnd);
+        $absencesByUser = [];
+        foreach ($absencesRaw as $a) {
+            $absencesByUser[$a->getUser()->getId()][$a->getDate()->format('Y-m-d')] = [
+                'id'    => $a->getId(),
+                'date'  => $a->getDate()->format('Y-m-d'),
+                'type'  => $a->getType(),
+                'motif' => $a->getMotif(),
+            ];
+        }
+
         // ── Pré-initialise avec tous les staff actifs (même sans shift cette semaine) ──
         $employeesMap = [];
         foreach ($this->userRepository->findActifByCentre($centreId) as $u) {
-            $employeesMap[$u->getId()] = [
-                'id'          => $u->getId(),
+            $uid = $u->getId();
+            $employeesMap[$uid] = [
+                'id'          => $uid,
                 'nom'         => $u->getNom(),
                 'prenom'      => $u->getPrenom(),
                 'role'        => $u->getRole(),
@@ -109,6 +125,7 @@ class PlanningService
                 'heuresHebdo' => $u->getHeuresHebdo(),
                 'typeContrat' => $u->getTypeContrat(),
                 'shifts'      => [],
+                'absences'    => array_values($absencesByUser[$uid] ?? []),
                 'totalHeures' => 0.0,
             ];
         }
@@ -130,6 +147,7 @@ class PlanningService
                         'heuresHebdo' => $user->getHeuresHebdo(),
                         'typeContrat' => $user->getTypeContrat(),
                         'shifts'      => [],
+                        'absences'    => array_values($absencesByUser[$userId] ?? []),
                         'totalHeures' => 0.0,
                     ];
                 }
@@ -362,6 +380,7 @@ class PlanningService
     {
         $centre   = $user->getCentre();
         $centreId = $centre->getId();
+        $userId   = $user->getId();
         $today    = new \DateTimeImmutable('today');
 
         // Lundi de la semaine courante
@@ -375,44 +394,89 @@ class PlanningService
 
         $result = [];
         foreach (array_slice($pubList, 0, 3) as $pw) {
-            $wStart  = $pw->getWeekStart();
-            $wEnd    = $wStart->modify('+6 days');
-            $services = $this->serviceRepository->findBetween($centreId, $wStart, $wEnd);
+            $wStart   = $pw->getWeekStart();
+            $wEnd     = $wStart->modify('+6 days');
+
+            // Lecture depuis le dernier snapshot publié — source de vérité légale
+            $snapshot = $this->planningSnapshotRepository->findLatestByWeek($centreId, $wStart);
 
             $shifts = [];
             $total  = 0.0;
 
-            foreach ($services as $service) {
-                $postes = $this->em->createQueryBuilder()
-                    ->select('p', 'z')
-                    ->from(Poste::class, 'p')
-                    ->leftJoin('p.zone', 'z')
-                    ->andWhere('p.service = :service')
-                    ->andWhere('p.user = :user')
-                    ->setParameter('service', $service)
-                    ->setParameter('user', $user)
-                    ->getQuery()->getResult();
+            if ($snapshot !== null) {
+                $data      = $snapshot->getData();
+                $employees = $data['employees'] ?? [];
 
-                foreach ($postes as $poste) {
-                    $duree    = $this->calculateShiftDuration($poste);
-                    $total   += $duree;
-                    $shifts[] = [
-                        'date'         => $service->getDate()->format('Y-m-d'),
-                        'zoneNom'      => $poste->getZone()->getNom(),
-                        'zoneCouleur'  => $poste->getZone()->getCouleur() ?? '#6b7280',
-                        'heureDebut'   => $poste->getHeureDebut()?->format('H:i'),
-                        'heureFin'     => $poste->getHeureFin()?->format('H:i'),
-                        'pauseMinutes' => $poste->getPauseMinutes(),
-                    ];
+                // Trouve les données de cet employé dans le snapshot
+                foreach ($employees as $emp) {
+                    if (($emp['id'] ?? null) !== $userId) {
+                        continue;
+                    }
+                    foreach ($emp['shifts'] ?? [] as $s) {
+                        $shifts[] = [
+                            'date'         => $s['date'],
+                            'zoneNom'      => $s['zoneNom'],
+                            'zoneCouleur'  => $s['zoneCouleur'],
+                            'heureDebut'   => $s['heureDebut'],
+                            'heureFin'     => $s['heureFin'],
+                            'pauseMinutes' => $s['pauseMinutes'] ?? 0,
+                        ];
+                    }
+                    $total = (float) ($emp['totalHeures'] ?? 0.0);
+                    break;
+                }
+            } else {
+                // Fallback live si aucun snapshot (planning marqué PUBLIE manuellement)
+                $services = $this->serviceRepository->findBetween($centreId, $wStart, $wEnd);
+                foreach ($services as $service) {
+                    $postes = $this->em->createQueryBuilder()
+                        ->select('p', 'z')
+                        ->from(Poste::class, 'p')
+                        ->leftJoin('p.zone', 'z')
+                        ->andWhere('p.service = :service')
+                        ->andWhere('p.user = :user')
+                        ->setParameter('service', $service)
+                        ->setParameter('user', $user)
+                        ->getQuery()->getResult();
+
+                    foreach ($postes as $poste) {
+                        $duree  = $this->calculateShiftDuration($poste);
+                        $total += $duree;
+                        $shifts[] = [
+                            'date'         => $service->getDate()->format('Y-m-d'),
+                            'zoneNom'      => $poste->getZone()->getNom(),
+                            'zoneCouleur'  => $poste->getZone()->getCouleur() ?? '#6b7280',
+                            'heureDebut'   => $poste->getHeureDebut()?->format('H:i'),
+                            'heureFin'     => $poste->getHeureFin()?->format('H:i'),
+                            'pauseMinutes' => $poste->getPauseMinutes(),
+                        ];
+                    }
                 }
             }
 
+            // Absences de l'employé pour cette semaine
+            $absencesRaw = $this->absenceRepository->findByCentreAndDateRange($centreId, $wStart, $wEnd);
+            $absences = [];
+            foreach ($absencesRaw as $a) {
+                if ($a->getUser()->getId() !== $userId) {
+                    continue;
+                }
+                $absences[] = [
+                    'id'    => $a->getId(),
+                    'date'  => $a->getDate()->format('Y-m-d'),
+                    'type'  => $a->getType(),
+                    'motif' => $a->getMotif(),
+                ];
+            }
+
             $result[] = [
-                'weekStart'   => $wStart->format('Y-m-d'),
-                'weekEnd'     => $wEnd->format('Y-m-d'),
-                'statut'      => PlanningWeek::STATUT_PUBLIE,
-                'shifts'      => $shifts,
-                'totalHeures' => round($total, 2),
+                'weekStart'    => $wStart->format('Y-m-d'),
+                'weekEnd'      => $wEnd->format('Y-m-d'),
+                'statut'       => PlanningWeek::STATUT_PUBLIE,
+                'publishedAt'  => $snapshot?->getPublishedAt()?->format('Y-m-d H:i'),
+                'shifts'       => $shifts,
+                'absences'     => $absences,
+                'totalHeures'  => round($total, 2),
             ];
         }
 
@@ -639,9 +703,13 @@ class PlanningService
         foreach ($employees as $emp) {
             $shifts = $emp['shifts'];
 
-            // Regroupe et trie les shifts par date
+            // Dates marquées comme absences — on les exclut des alertes légales
+            $absenceDates = array_column($emp['absences'] ?? [], 'date');
+
+            // Regroupe et trie les shifts par date (hors jours d'absence)
             $shiftsByDate = [];
             foreach ($shifts as $shift) {
+                if (in_array($shift['date'], $absenceDates, true)) continue;
                 $shiftsByDate[$shift['date']][] = $shift;
             }
             ksort($shiftsByDate);
@@ -685,6 +753,7 @@ class PlanningService
 
             // ── PAUSE_6H : shift > 6h avec pause < 20 min ───────────────────
             foreach ($shifts as $s) {
+                if (in_array($s['date'], $absenceDates, true)) continue;
                 if (!$s['heureDebut'] || !$s['heureFin']) continue;
                 $d = \DateTimeImmutable::createFromFormat('H:i', $s['heureDebut']);
                 $f = \DateTimeImmutable::createFromFormat('H:i', $s['heureFin']);
@@ -752,6 +821,7 @@ class PlanningService
             if (!empty($shifts)) {
                 $workSlots = [];
                 foreach ($shifts as $s) {
+                    if (in_array($s['date'], $absenceDates, true)) continue;
                     if (!$s['heureDebut'] || !$s['heureFin']) continue;
                     $start = \DateTimeImmutable::createFromFormat('Y-m-d H:i', $s['date'] . ' ' . $s['heureDebut']);
                     $end   = \DateTimeImmutable::createFromFormat('Y-m-d H:i', $s['date'] . ' ' . $s['heureFin']);
@@ -809,6 +879,7 @@ class PlanningService
                 ->setParameter('centre', $centre)
                 ->setParameter('from', $twelveWeeksAgo)
                 ->setParameter('to', $weekEndCurrent)
+                ->setParameter('userIds', $userIds)
                 ->getQuery()
                 ->getResult();
 

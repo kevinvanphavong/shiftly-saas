@@ -309,6 +309,32 @@ CREATE TABLE planning_snapshot (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- TABLE : absence
+-- Absence journalière d'un employé (CP, RTT, maladie, repos planifié…)
+-- Contrainte UNIQUE (user_id, date) : une seule absence par jour par employé.
+-- type : 'CP' | 'RTT' | 'MALADIE' | 'REPOS' | 'EVENEMENT_FAMILLE' | 'AUTRE'
+-- ============================================================
+
+CREATE TABLE absence (
+    id          INT AUTO_INCREMENT NOT NULL,
+    centre_id   INT          NOT NULL,
+    user_id     INT          NOT NULL,
+    date        DATE         NOT NULL COMMENT '(DC2Type:date_immutable)',
+    type        VARCHAR(30)  NOT NULL,
+    motif       VARCHAR(255) DEFAULT NULL,
+    created_at  DATETIME     NOT NULL COMMENT '(DC2Type:datetime_immutable)',
+    created_by  INT          DEFAULT NULL,
+    UNIQUE KEY  uniq_absence_user_date (user_id, date),
+    INDEX idx_absence_centre (centre_id),
+    INDEX idx_absence_user   (user_id),
+    INDEX idx_absence_date   (date),
+    PRIMARY KEY (id),
+    CONSTRAINT FK_absence_centre     FOREIGN KEY (centre_id)  REFERENCES centre (id),
+    CONSTRAINT FK_absence_user       FOREIGN KEY (user_id)    REFERENCES `user` (id),
+    CONSTRAINT FK_absence_created_by FOREIGN KEY (created_by) REFERENCES `user` (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- NOTES MÉTIER
 -- ============================================================
 

@@ -13,6 +13,7 @@ import type {
   DuplicateWeekPayload,
   MoveShiftPayload,
   PlanningSnapshotSummary,
+  AbsenceType,
 } from '@/types/planning'
 
 // ─── Planning hebdo (vue Manager) ────────────────────────────────────────────
@@ -60,9 +61,10 @@ export function useCreateShift() {
     mutationFn: (payload: CreateShiftPayload) =>
       api.post('/postes/create', payload).then(r => r.data),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
-      queryClient.invalidateQueries({ queryKey: ['planning', 'alerts', centreId] })
+    onSuccess: async () => {
+      // await garantit que le refetch est terminé avant que mutateAsync resolve
+      // → la modal se ferme avec des alertes déjà à jour
+      await queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
       queryClient.invalidateQueries({ queryKey: ['service', 'today', centreId] })
     },
   })
@@ -80,9 +82,8 @@ export function useUpdateShift() {
         headers: { 'Content-Type': 'application/merge-patch+json' },
       }).then(r => r.data),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
-      queryClient.invalidateQueries({ queryKey: ['planning', 'alerts', centreId] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
     },
   })
 }
@@ -97,9 +98,8 @@ export function useDeleteShift() {
     mutationFn: (posteId: number) =>
       api.delete(`/postes/${posteId}`).then(r => r.data),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
-      queryClient.invalidateQueries({ queryKey: ['planning', 'alerts', centreId] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
       queryClient.invalidateQueries({ queryKey: ['service', 'today', centreId] })
     },
   })
@@ -190,6 +190,38 @@ export function useDuplicateWeek() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
+    },
+  })
+}
+
+// ─── Créer une absence ────────────────────────────────────────────────────────
+
+export function useCreateAbsence() {
+  const centreId    = useAuthStore(s => s.centreId)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: { userId: number; date: string; type: AbsenceType; motif?: string }) =>
+      api.post('/planning/absence', payload).then(r => r.data),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
+    },
+  })
+}
+
+// ─── Supprimer une absence ────────────────────────────────────────────────────
+
+export function useDeleteAbsence() {
+  const centreId    = useAuthStore(s => s.centreId)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (absenceId: number) =>
+      api.delete(`/planning/absence/${absenceId}`).then(r => r.data),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['planning', 'week', centreId] })
     },
   })
 }

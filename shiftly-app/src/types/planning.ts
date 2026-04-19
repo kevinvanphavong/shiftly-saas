@@ -18,6 +18,17 @@ export interface MoveShiftPayload {
   newDate: string         // 'YYYY-MM-DD' cible
 }
 
+// ─── Absence ──────────────────────────────────────────────────────────────────
+
+export type AbsenceType = 'CP' | 'RTT' | 'MALADIE' | 'REPOS' | 'EVENEMENT_FAMILLE' | 'AUTRE'
+
+export interface PlanningAbsence {
+  id:    number
+  date:  string         // 'YYYY-MM-DD'
+  type:  AbsenceType
+  motif: string | null
+}
+
 // ─── Employé dans le planning ─────────────────────────────────────────────────
 
 export interface PlanningEmployee {
@@ -29,6 +40,7 @@ export interface PlanningEmployee {
   heuresHebdo:  number | null
   typeContrat:  string | null
   shifts:       PlanningShift[]
+  absences:     PlanningAbsence[]
   totalHeures:  number
   ecartContrat: number         // positif = surplus, négatif = sous-planifié
 }
@@ -108,7 +120,9 @@ export interface EmployeeWeek {
   weekStart:   string
   weekEnd:     string
   statut:      'PUBLIE'
+  publishedAt: string | null
   shifts:      EmployeeShift[]
+  absences:    PlanningAbsence[]
   totalHeures: number
 }
 
