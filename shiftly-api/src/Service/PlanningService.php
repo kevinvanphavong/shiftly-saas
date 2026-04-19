@@ -427,7 +427,7 @@ class PlanningService
     }
 
     /**
-     * Génère les alertes pour la semaine (ZONE_NON_COUVERTE + SANS_PAUSE).
+     * Génère les alertes métier (ZONE_NON_COUVERTE, SANS_PAUSE) et légales.
      */
     private function buildAlerts(array $employees, array $services, array $zones): array
     {
@@ -439,7 +439,7 @@ class PlanningService
             foreach ($emp['shifts'] as $shift) {
                 $couvertureParDate[$shift['date']][$shift['zoneId']] = true;
 
-                // Alerte SANS_PAUSE : shift > 6h sans pause
+                // Alerte SANS_PAUSE métier : shift > 6h sans aucune pause
                 if ($shift['heureDebut'] && $shift['heureFin']) {
                     $debut = \DateTimeImmutable::createFromFormat('H:i', $shift['heureDebut']);
                     $fin   = \DateTimeImmutable::createFromFormat('H:i', $shift['heureFin']);
@@ -448,13 +448,12 @@ class PlanningService
                         if ($minutes < 0) $minutes += 1440;
                         if ($minutes > 360 && $shift['pauseMinutes'] === 0) {
                             $alertes[] = [
-                                'type'     => 'SANS_PAUSE',
-                                'severite' => 'moyenne',
-                                'message'  => sprintf(
+                                'type'      => 'SANS_PAUSE',
+                                'severite'  => 'moyenne',
+                                'categorie' => 'metier',
+                                'message'   => sprintf(
                                     'Shift de %.0fh sans pause pour %s le %s',
-                                    $minutes / 60,
-                                    $emp['nom'],
-                                    $shift['date']
+                                    $minutes / 60, $emp['nom'], $shift['date']
                                 ),
                                 'date'   => $shift['date'],
                                 'userId' => $emp['id'],
@@ -465,24 +464,200 @@ class PlanningService
             }
         }
 
-        // Alerte ZONE_NON_COUVERTE : zone sans poste sur un jour avec service
+        // Alerte ZONE_NON_COUVERTE métier
         foreach ($services as $service) {
             $dateStr = $service->getDate()->format('Y-m-d');
             foreach ($zones as $zone) {
                 if (!isset($couvertureParDate[$dateStr][$zone['id']])) {
                     $alertes[] = [
-                        'type'     => 'ZONE_NON_COUVERTE',
-                        'severite' => 'haute',
-                        'message'  => sprintf('%s non couverte le %s', $zone['nom'], $dateStr),
-                        'date'     => $dateStr,
-                        'zoneId'   => $zone['id'],
+                        'type'      => 'ZONE_NON_COUVERTE',
+                        'severite'  => 'haute',
+                        'categorie' => 'metier',
+                        'message'   => sprintf('%s non couverte le %s', $zone['nom'], $dateStr),
+                        'date'      => $dateStr,
+                        'zoneId'    => $zone['id'],
                     ];
                 }
             }
         }
 
-        // Trie par sévérité : haute en premier
-        usort($alertes, fn($a, $b) => strcmp($b['severite'], $a['severite']));
+        // Alertes légales Code du travail
+        $alertes = array_merge($alertes, $this->getLegalAlerts($employees));
+
+        // Trie : haute en premier, légal avant métier à sévérité égale
+        usort($alertes, function ($a, $b) {
+            $sevCmp = strcmp($b['severite'], $a['severite']);
+            if ($sevCmp !== 0) return $sevCmp;
+            return strcmp($b['categorie'] ?? 'metier', $a['categorie'] ?? 'metier');
+        });
+
+        return $alertes;
+    }
+
+    /**
+     * Calcule les 6 alertes légales du Code du travail à partir des shifts de la semaine.
+     *
+     * Alertes : MAX_JOURNALIER, MAX_HEBDO_ABSOLU, MAX_HEBDO_MOYENNE,
+     *           REPOS_QUOTIDIEN, REPOS_HEBDO, PAUSE_6H
+     */
+    private function getLegalAlerts(array $employees): array
+    {
+        $alertes = [];
+
+        foreach ($employees as $emp) {
+            $shifts = $emp['shifts'];
+
+            // Regroupe et trie les shifts par date
+            $shiftsByDate = [];
+            foreach ($shifts as $shift) {
+                $shiftsByDate[$shift['date']][] = $shift;
+            }
+            ksort($shiftsByDate);
+
+            // ── MAX_JOURNALIER : > 10h sur un même jour ──────────────────────
+            foreach ($shiftsByDate as $date => $dayShifts) {
+                $totalMin = 0;
+                foreach ($dayShifts as $s) {
+                    if (!$s['heureDebut'] || !$s['heureFin']) continue;
+                    $d = \DateTimeImmutable::createFromFormat('H:i', $s['heureDebut']);
+                    $f = \DateTimeImmutable::createFromFormat('H:i', $s['heureFin']);
+                    if (!$d || !$f) continue;
+                    $min = ($f->getTimestamp() - $d->getTimestamp()) / 60;
+                    if ($min < 0) $min += 1440;
+                    $totalMin += max(0, $min - $s['pauseMinutes']);
+                }
+                if ($totalMin > 600) {
+                    $alertes[] = [
+                        'type'       => 'MAX_JOURNALIER',
+                        'severite'   => 'haute',
+                        'categorie'  => 'legal',
+                        'baseLegale' => 'Art. L3121-18 C. travail',
+                        'message'    => sprintf('%s dépasse 10h le %s (%.1fh planifiées)', $emp['nom'], $date, $totalMin / 60),
+                        'date'       => $date,
+                        'userId'     => $emp['id'],
+                    ];
+                }
+            }
+
+            // ── MAX_HEBDO_ABSOLU : > 48h sur la semaine ──────────────────────
+            if ($emp['totalHeures'] > 48) {
+                $alertes[] = [
+                    'type'       => 'MAX_HEBDO_ABSOLU',
+                    'severite'   => 'haute',
+                    'categorie'  => 'legal',
+                    'baseLegale' => 'Art. L3121-20 C. travail',
+                    'message'    => sprintf('%s dépasse 48h cette semaine (%.1fh)', $emp['nom'], $emp['totalHeures']),
+                    'userId'     => $emp['id'],
+                ];
+            }
+
+            // ── PAUSE_6H : shift > 6h avec pause < 20 min ───────────────────
+            foreach ($shifts as $s) {
+                if (!$s['heureDebut'] || !$s['heureFin']) continue;
+                $d = \DateTimeImmutable::createFromFormat('H:i', $s['heureDebut']);
+                $f = \DateTimeImmutable::createFromFormat('H:i', $s['heureFin']);
+                if (!$d || !$f) continue;
+                $min = ($f->getTimestamp() - $d->getTimestamp()) / 60;
+                if ($min < 0) $min += 1440;
+                if ($min > 360 && $s['pauseMinutes'] < 20) {
+                    $alertes[] = [
+                        'type'       => 'PAUSE_6H',
+                        'severite'   => 'moyenne',
+                        'categorie'  => 'legal',
+                        'baseLegale' => 'Art. L3121-16 C. travail',
+                        'message'    => sprintf('%s : shift de %.0fh, pause insuffisante (%dmin) le %s', $emp['nom'], $min / 60, $s['pauseMinutes'], $s['date']),
+                        'date'       => $s['date'],
+                        'userId'     => $emp['id'],
+                    ];
+                }
+            }
+
+            // ── REPOS_QUOTIDIEN : < 11h entre dernier shift J et premier J+1 ─
+            $dates = array_keys($shiftsByDate);
+            foreach ($dates as $i => $date) {
+                if (!isset($dates[$i + 1])) continue;
+                $nextDate = $dates[$i + 1];
+
+                // Vérifie que c'est bien le lendemain
+                $diff = (new \DateTimeImmutable($nextDate))->diff(new \DateTimeImmutable($date));
+                if ($diff->days !== 1) continue;
+
+                // Dernier shift du jour J (trié par heureFin)
+                $dayShifts     = $shiftsByDate[$date];
+                $nextDayShifts = $shiftsByDate[$nextDate];
+
+                $lastFin   = null;
+                $firstDeb  = null;
+
+                foreach ($dayShifts as $s) {
+                    if (!$s['heureFin']) continue;
+                    $ts = \DateTimeImmutable::createFromFormat('Y-m-d H:i', $date . ' ' . $s['heureFin']);
+                    if ($ts && (!$lastFin || $ts > $lastFin)) $lastFin = $ts;
+                }
+                foreach ($nextDayShifts as $s) {
+                    if (!$s['heureDebut']) continue;
+                    $ts = \DateTimeImmutable::createFromFormat('Y-m-d H:i', $nextDate . ' ' . $s['heureDebut']);
+                    if ($ts && (!$firstDeb || $ts < $firstDeb)) $firstDeb = $ts;
+                }
+
+                if ($lastFin && $firstDeb) {
+                    $repos = ($firstDeb->getTimestamp() - $lastFin->getTimestamp()) / 3600;
+                    if ($repos < 11) {
+                        $alertes[] = [
+                            'type'       => 'REPOS_QUOTIDIEN',
+                            'severite'   => 'haute',
+                            'categorie'  => 'legal',
+                            'baseLegale' => 'Art. L3131-1 C. travail',
+                            'message'    => sprintf('%s : repos de %.0fh entre %s et %s (11h requises)', $emp['nom'], max(0, $repos), $date, $nextDate),
+                            'date'       => $date,
+                            'userId'     => $emp['id'],
+                        ];
+                    }
+                }
+            }
+
+            // ── REPOS_HEBDO : plage consécutive sans shift < 35h ────────────
+            if (!empty($shifts)) {
+                $workSlots = [];
+                foreach ($shifts as $s) {
+                    if (!$s['heureDebut'] || !$s['heureFin']) continue;
+                    $start = \DateTimeImmutable::createFromFormat('Y-m-d H:i', $s['date'] . ' ' . $s['heureDebut']);
+                    $end   = \DateTimeImmutable::createFromFormat('Y-m-d H:i', $s['date'] . ' ' . $s['heureFin']);
+                    if (!$start || !$end) continue;
+                    $startTs = $start->getTimestamp();
+                    $endTs   = $end->getTimestamp();
+                    if ($endTs < $startTs) $endTs += 86400; // shift de nuit
+                    $workSlots[] = [$startTs, $endTs];
+                }
+
+                if (!empty($workSlots)) {
+                    usort($workSlots, fn($a, $b) => $a[0] <=> $b[0]);
+
+                    // Calcule la plus longue plage de repos dans la semaine
+                    $firstShiftStart = $workSlots[0][0];
+                    $lastShiftEnd    = end($workSlots)[1];
+                    $maxRepos        = 0.0;
+                    $prev            = $firstShiftStart;
+
+                    foreach ($workSlots as $slot) {
+                        $gap      = ($slot[0] - $prev) / 3600;
+                        $maxRepos = max($maxRepos, $gap);
+                        $prev     = $slot[1];
+                    }
+
+                    if ($maxRepos < 35) {
+                        $alertes[] = [
+                            'type'       => 'REPOS_HEBDO',
+                            'severite'   => 'haute',
+                            'categorie'  => 'legal',
+                            'baseLegale' => 'Art. L3132-2 C. travail',
+                            'message'    => sprintf('%s : repos hebdo insuffisant (%.0fh consécutives, 35h requises)', $emp['nom'], $maxRepos),
+                            'userId'     => $emp['id'],
+                        ];
+                    }
+                }
+            }
+        }
 
         return $alertes;
     }

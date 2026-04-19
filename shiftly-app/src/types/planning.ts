@@ -36,21 +36,31 @@ export interface PlanningEmployee {
 // ─── Alerte planning ──────────────────────────────────────────────────────────
 
 export type AlerteType =
+  // Alertes métier
   | 'DEPASSEMENT_HEURES'
   | 'SOUS_PLANIFIE'
   | 'ZONE_NON_COUVERTE'
   | 'SANS_PAUSE'
-  | 'JOUR_SANS_REPOS'
+  // Alertes légales Code du travail
+  | 'MAX_JOURNALIER'
+  | 'MAX_HEBDO_ABSOLU'
+  | 'MAX_HEBDO_MOYENNE'
+  | 'REPOS_QUOTIDIEN'
+  | 'REPOS_HEBDO'
+  | 'PAUSE_6H'
 
-export type AlerteSeverite = 'haute' | 'moyenne'
+export type AlerteSeverite  = 'haute' | 'moyenne'
+export type AlerteCategorie = 'metier' | 'legal'
 
 export interface PlanningAlerte {
-  type:     AlerteType
-  severite: AlerteSeverite
-  message:  string
-  date?:    string
-  zoneId?:  number
-  userId?:  number
+  type:        AlerteType
+  severite:    AlerteSeverite
+  categorie?:  AlerteCategorie   // 'legal' → badge ⚖️
+  baseLegale?: string            // ex: "Art. L3121-18 C. travail"
+  message:     string
+  date?:       string
+  zoneId?:     number
+  userId?:     number
 }
 
 // ─── Zone résumée ─────────────────────────────────────────────────────────────
